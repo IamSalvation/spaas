@@ -14,46 +14,67 @@ export class InventoryService {
         const unitCostMinor = Math.round(unitCost * 100);
 
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            // 1. Record the movement
             await tx.insert(stockMovements).values({
-                tenantId: context.tenantId,
-                itemId,
-                movementType: 'receipt',
-                quantity: quantity.toString(),
-                unitCostMinor,
-                referenceId
+                tenantId: context.tenantId, itemId, movementType: 'receipt',
+                quantity: quantity.toString(), unitCostMinor, referenceId
             });
 
-            // 2. Get existing stock level
             const [existing] = await tx.select().from(stockLevels).where(
                 and(eq(stockLevels.tenantId, context.tenantId), eq(stockLevels.itemId, itemId))
             );
 
             if (existing) {
-                // 3. Calculate Weighted Average Cost
                 const currentQty = Number(existing.quantityOnHand);
                 const currentValue = existing.totalValueMinor;
                 const newQty = currentQty + quantity;
                 const newValue = currentValue + (quantity * unitCostMinor);
 
                 await tx.update(stockLevels)
-                    .set({
-                        quantityOnHand: newQty.toString(),
-                        totalValueMinor: newValue
-                    })
+                    .set({ quantityOnHand: newQty.toString(), totalValueMinor: newValue })
                     .where(eq(stockLevels.id, existing.id));
 
                 return { ...existing, quantityOnHand: newQty.toString(), totalValueMinor: newValue };
             } else {
-                // 4. Create new stock level
                 const [newLevel] = await tx.insert(stockLevels).values({
-                    tenantId: context.tenantId,
-                    itemId,
-                    quantityOnHand: quantity.toString(),
-                    totalValueMinor: quantity * unitCostMinor
+                    tenantId: context.tenantId, itemId,
+                    quantityOnHand: quantity.toString(), totalValueMinor: quantity * unitCostMinor
                 }).returning();
                 return newLevel;
             }
+        });
+    }
+
+    async issueStock(itemId: string, quantity: number, referenceId?: string) {
+        const context = TenantStore.getStore();
+        if (!context) throw new BadRequestException('No tenant context');
+
+        return await withTenant(async (tx: PostgresJsDatabase<any>) => {
+            const [existing] = await tx.select().from(stockLevels).where(
+                and(eq(stockLevels.tenantId, context.tenantId), eq(stockLevels.itemId, itemId))
+            );
+
+            if (!existing || Number(existing.quantityOnHand) < quantity) {
+                throw new BadRequestException(`Insufficient stock for item ${itemId}`);
+            }
+
+            const currentQty = Number(existing.quantityOnHand);
+            const currentValue = existing.totalValueMinor;
+            const avgUnitCostMinor = currentValue / currentQty;
+
+            const newQty = currentQty - quantity;
+            const newValue = currentValue - (quantity * avgUnitCostMinor);
+
+            await tx.update(stockLevels)
+                .set({ quantityOnHand: newQty.toString(), totalValueMinor: Math.round(newValue) })
+                .where(eq(stockLevels.id, existing.id));
+
+            // Record the movement
+            await tx.insert(stockMovements).values({
+                tenantId: context.tenantId, itemId, movementType: 'issue',
+                quantity: quantity.toString(), unitCostMinor: Math.round(avgUnitCostMinor), referenceId
+            });
+
+            return { valueIssuedMinor: Math.round(quantity * avgUnitCostMinor) };
         });
     }
 

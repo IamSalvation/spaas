@@ -4,7 +4,6 @@ import { pgSchema, uuid, text, timestamp } from 'drizzle-orm/pg-core';
 import { IdentityService } from './identity.service';
 import { IdentityController } from './identity.controller';
 
-// 1. Define the Schema
 export const identitySchema = pgSchema('identity');
 
 export const tenants = identitySchema.table('tenant', {
@@ -22,7 +21,6 @@ export const users = identitySchema.table('user', {
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// 2. Define the NestJS Module
 @Module({
 	imports: [
 		JwtModule.register({
@@ -32,6 +30,6 @@ export const users = identitySchema.table('user', {
 	],
 	controllers: [IdentityController],
 	providers: [IdentityService],
-	exports: [IdentityService],
+	exports: [IdentityService, JwtModule], // <-- ADD JwtModule HERE
 })
 export class IdentityModule { }

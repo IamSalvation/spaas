@@ -3,16 +3,15 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IdentityModule } from '@spaas/identity';
-import { FinanceModule } from '@spaas/finance'; // <-- Added
+import { FinanceModule } from '@spaas/finance';
+import { MasterdataModule } from '@spaas/masterdata'; // <-- ADD THIS
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     IdentityModule,
-    FinanceModule // <-- Added
+    FinanceModule,
+    MasterdataModule // <-- ADD THIS
   ],
   controllers: [AppController],
   providers: [AppService],

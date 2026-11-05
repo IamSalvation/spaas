@@ -1,0 +1,60 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": [
+      "es2020",
+      "dom"
+    ],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": false,
+    "paths": {
+      "@spaas/shared": [
+        "./libs/shared/src/index.ts"
+      ],
+      "@spaas/identity": [
+        "./libs/identity/src/index.ts"
+      ],
+      "@spaas/masterdata": [
+        "./libs/masterdata/src/index.ts"
+      ],
+      "@spaas/finance": [
+        "./libs/finance/src/index.ts"
+      ],
+      "@spaas/procurement": [
+        "./libs/procurement/src/index.ts"
+      ],
+      "@spaas/inventory": [
+        "./libs/inventory/src/index.ts"
+      ],
+      "@spaas/sales": [
+        "./libs/sales/src/index.ts"
+      ],
+      "@spaas/manufacturing": [
+        "./libs/manufacturing/src/index.ts"
+      ],
+      "@spaas/hr": [
+        "./libs/hr/src/index.ts"
+      ],
+      "@spaas/analytics": [
+        "./libs/analytics/src/index.ts"
+      ],
+      "@spaas/compliance": [
+        "./libs/compliance/src/index.ts"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
+}

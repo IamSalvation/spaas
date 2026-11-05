@@ -5,7 +5,8 @@ import { AppService } from './app.service';
 import { IdentityModule } from '@spaas/identity';
 import { FinanceModule } from '@spaas/finance';
 import { MasterdataModule } from '@spaas/masterdata';
-import { SalesModule } from '@spaas/sales'; // <-- ADD THIS
+import { SalesModule } from '@spaas/sales';
+import { InventoryModule } from '@spaas/inventory'; // <-- ADD THIS
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { SalesModule } from '@spaas/sales'; // <-- ADD THIS
     IdentityModule,
     FinanceModule,
     MasterdataModule,
-    SalesModule // <-- ADD THIS
+    SalesModule,
+    InventoryModule // <-- ADD THIS
   ],
   controllers: [AppController],
   providers: [AppService],

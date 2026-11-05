@@ -40,4 +40,16 @@ export class MasterdataService {
             return item;
         });
     }
+
+    async getParties() {
+        return await withTenant(async (tx: PostgresJsDatabase<any>) => {
+            return await tx.select().from(parties);
+        });
+    }
+
+    async getItems() {
+        return await withTenant(async (tx: PostgresJsDatabase<any>) => {
+            return await tx.select().from(items);
+        });
+    }
 }

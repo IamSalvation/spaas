@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
 import { MasterdataService } from './masterdata.service';
 import { JwtAuthGuard } from '@spaas/identity';
 
@@ -12,8 +12,18 @@ export class MasterdataController {
         return this.masterdataService.createParty(body.type, body.name, body.email, body.phone);
     }
 
+    @Get('parties')
+    async getParties() {
+        return this.masterdataService.getParties();
+    }
+
     @Post('items')
     async createItem(@Body() body: { sku: string, name: string, uom: string }) {
         return this.masterdataService.createItem(body.sku, body.name, body.uom);
+    }
+
+    @Get('items')
+    async getItems() {
+        return this.masterdataService.getItems();
     }
 }

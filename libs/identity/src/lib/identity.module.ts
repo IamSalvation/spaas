@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { pgSchema, uuid, text, timestamp } from 'drizzle-orm/pg-core';
+import { IdentityService } from './identity.service';
+import { IdentityController } from './identity.controller';
 
 // 1. Define the Schema
 export const identitySchema = pgSchema('identity');
@@ -28,8 +30,8 @@ export const users = identitySchema.table('user', {
 			signOptions: { expiresIn: '1d' },
 		}),
 	],
-	controllers: [],
-	providers: [],
-	exports: [],
+	controllers: [IdentityController],
+	providers: [IdentityService],
+	exports: [IdentityService],
 })
 export class IdentityModule { }

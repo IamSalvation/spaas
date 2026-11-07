@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { glAccounts, journalEntries, journalLines } from './finance.module';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 @Injectable()
@@ -58,6 +58,24 @@ export class FinanceService {
             }
 
             return { success: true, journalEntryId: entry.id };
+        });
+    }
+
+    async getTrialBalance() {
+        return await withTenant(async (tx: PostgresJsDatabase<any>) => {
+            const result = await tx.execute(sql`
+        SELECT 
+          gl.code, 
+          gl.name, 
+          gl.type,
+          COALESCE(SUM(jl.debit_minor), 0) as total_debit,
+          COALESCE(SUM(jl.credit_minor), 0) as total_credit
+        FROM finance.gl_account gl
+        LEFT JOIN finance.journal_line jl ON jl.gl_account_id = gl.id
+        GROUP BY gl.id, gl.code, gl.name, gl.type
+        ORDER BY gl.code ASC
+      `);
+            return result;
         });
     }
 }

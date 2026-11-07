@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
 import { ProcurementService } from './procurement.service';
 import { JwtAuthGuard } from '@spaas/identity';
 
@@ -10,6 +10,11 @@ export class ProcurementController {
     @Post('orders')
     async createOrder(@Body() body: { vendorId: string, orderDate: string, lines: any[] }) {
         return this.procurementService.createPurchaseOrder(body.vendorId, body.orderDate, body.lines);
+    }
+
+    @Get('orders')
+    async getOrders() {
+        return this.procurementService.getPurchaseOrders();
     }
 
     @Post('orders/receive')

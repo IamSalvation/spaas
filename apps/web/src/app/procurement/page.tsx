@@ -8,22 +8,24 @@ export default function ProcurementPage() {
     const { logout } = useAuth();
     const [vendors, setVendors] = useState<any[]>([]);
     const [items, setItems] = useState<any[]>([]);
+    const [orders, setOrders] = useState<any[]>([]);
 
-    // Order Form State
     const [vendorId, setVendorId] = useState('');
     const [orderLines, setOrderLines] = useState([{ itemId: '', quantity: 1, unitCost: 0 }]);
     const [message, setMessage] = useState('');
 
-    // Fetch Master Data
+    const fetchData = async () => {
+        const [partiesRes, itemsRes, ordersRes] = await Promise.all([
+            api.get('/masterdata/parties'),
+            api.get('/masterdata/items'),
+            api.get('/procurement/orders')
+        ]);
+        setVendors(partiesRes.data.filter((p: any) => p.type === 'vendor'));
+        setItems(itemsRes.data);
+        setOrders(ordersRes.data);
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            const [partiesRes, itemsRes] = await Promise.all([
-                api.get('/masterdata/parties'),
-                api.get('/masterdata/items')
-            ]);
-            setVendors(partiesRes.data.filter((p: any) => p.type === 'vendor'));
-            setItems(itemsRes.data);
-        };
         fetchData();
     }, []);
 
@@ -41,7 +43,6 @@ export default function ProcurementPage() {
         e.preventDefault();
         setMessage('Creating Purchase Order...');
         try {
-            // 1. Create Purchase Order
             const res = await api.post('/procurement/orders', {
                 vendorId,
                 orderDate: new Date().toISOString().split('T')[0],
@@ -51,13 +52,13 @@ export default function ProcurementPage() {
             const orderId = res.data.id;
             setMessage('Order created! Receiving stock now...');
 
-            // 2. Automatically Receive it (This updates inventory and finance)
             await api.post('/procurement/orders/receive', {
                 purchaseOrderId: orderId
             });
 
             setMessage('✅ Purchase Order Created and Stock Received successfully!');
             setOrderLines([{ itemId: '', quantity: 1, unitCost: 0 }]);
+            fetchData(); // Refresh tables
         } catch (err: any) {
             setMessage(`❌ Error: ${err.response?.data?.message || 'Failed to create order'}`);
         }
@@ -82,7 +83,7 @@ export default function ProcurementPage() {
                     </div>
                 )}
 
-                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
                     <form onSubmit={handleSubmit}>
                         <div className="mb-6">
                             <label className="block text-sm font-medium mb-2">Vendor</label>
@@ -116,6 +117,35 @@ export default function ProcurementPage() {
                             </button>
                         </div>
                     </form>
+                </div>
+
+                {/* Recent Purchase Orders Table */}
+                <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                    <div className="p-4 border-b border-gray-700 bg-gray-800/50">
+                        <h2 className="text-lg font-bold">Recent Purchase Orders</h2>
+                    </div>
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-900/50 text-gray-400 border-b border-gray-700">
+                                <th className="p-4 font-medium">Vendor</th>
+                                <th className="p-4 font-medium">Date</th>
+                                <th className="p-4 font-medium">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {orders.map((o: any) => (
+                                <tr key={o.id} className="border-b border-gray-700/50">
+                                    <td className="p-4">{o.vendor_name}</td>
+                                    <td className="p-4 text-gray-400">{o.order_date}</td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${o.status === 'received' ? 'bg-green-900/50 text-green-400' : 'bg-gray-700 text-gray-300'}`}>
+                                            {o.status.toUpperCase()}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

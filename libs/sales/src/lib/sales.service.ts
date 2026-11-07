@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { FinanceService } from '@spaas/finance';
 import { salesOrders, salesOrderLines, salesInvoices } from './sales.module';
 
@@ -14,14 +14,12 @@ export class SalesService {
         if (!context) throw new BadRequestException('No tenant context');
 
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            // 1. Create the Order Header
             const [order] = await tx.insert(salesOrders).values({
                 tenantId: context.tenantId,
                 customerId,
                 orderDate,
             }).returning();
 
-            // 2. Insert the lines
             for (const line of lines) {
                 await tx.insert(salesOrderLines).values({
                     tenantId: context.tenantId,
@@ -36,11 +34,22 @@ export class SalesService {
         });
     }
 
+    async getSalesOrders() {
+        return await withTenant(async (tx: PostgresJsDatabase<any>) => {
+            const orders = await tx.execute(sql`
+        SELECT so.id, so.order_date, so.status, p.name as customer_name 
+        FROM sales.sales_order so
+        JOIN masterdata.party p ON p.id = so.customer_id
+        ORDER BY so.created_at DESC LIMIT 20
+      `);
+            return orders;
+        });
+    }
+
     async invoiceSalesOrder(salesOrderId: string, invoiceDate: string) {
         const context = TenantStore.getStore();
         if (!context) throw new BadRequestException('No tenant context');
 
-        // 1. Calculate the total from the order lines
         const orderLines = await withTenant(async (tx: PostgresJsDatabase<any>) => {
             return await tx.select().from(salesOrderLines).where(eq(salesOrderLines.salesOrderId, salesOrderId));
         });
@@ -48,7 +57,6 @@ export class SalesService {
         const totalMinor = orderLines.reduce((sum, line) => sum + (line.quantity * line.unitPriceMinor), 0);
         const totalAmount = totalMinor / 100;
 
-        // 2. Create the Invoice record
         const invoice = await withTenant(async (tx: PostgresJsDatabase<any>) => {
             const [inv] = await tx.insert(salesInvoices).values({
                 tenantId: context.tenantId,
@@ -57,13 +65,10 @@ export class SalesService {
                 totalMinor,
             }).returning();
 
-            // Update order status
             await tx.update(salesOrders).set({ status: 'invoiced' }).where(eq(salesOrders.id, salesOrderId));
             return inv;
         });
 
-        // 3. THE MAGIC: Automatically post to Finance!
-        // Debit Accounts Receivable (1200), Credit Sales Revenue (4000)
         await this.financeService.postJournalEntry(invoiceDate, `Invoice for SO ${salesOrderId}`, [
             { glCode: '1200', debit: totalAmount, credit: 0 },
             { glCode: '4000', debit: 0, credit: totalAmount }

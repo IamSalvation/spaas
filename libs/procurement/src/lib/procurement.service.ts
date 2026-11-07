@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { InventoryService } from '@spaas/inventory';
 import { FinanceService } from '@spaas/finance';
 import { purchaseOrders, purchaseOrderLines } from './procurement.module';
@@ -38,40 +38,46 @@ export class ProcurementService {
         });
     }
 
+    async getPurchaseOrders() {
+        return await withTenant(async (tx: PostgresJsDatabase<any>) => {
+            const orders = await tx.execute(sql`
+        SELECT po.id, po.order_date, po.status, p.name as vendor_name 
+        FROM procurement.purchase_order po
+        JOIN masterdata.party p ON p.id = po.vendor_id
+        ORDER BY po.created_at DESC LIMIT 20
+      `);
+            return orders;
+        });
+    }
+
     async receivePurchaseOrder(purchaseOrderId: string) {
         const context = TenantStore.getStore();
         if (!context) throw new BadRequestException('No tenant context');
 
-        // 1. Get the order and lines
         const orderLines = await withTenant(async (tx: PostgresJsDatabase<any>) => {
             return await tx.select().from(purchaseOrderLines).where(eq(purchaseOrderLines.purchaseOrderId, purchaseOrderId));
         });
 
         if (orderLines.length === 0) throw new NotFoundException('Purchase Order has no lines');
 
-        // 2. Update PO status to 'received'
         await withTenant(async (tx: PostgresJsDatabase<any>) => {
             await tx.update(purchaseOrders).set({ status: 'received' }).where(eq(purchaseOrders.id, purchaseOrderId));
         });
 
         let totalAmount = 0;
 
-        // 3. For each line, receive it into Inventory and calculate the total
         for (const line of orderLines) {
             const qty = Number(line.quantity);
             const unitCost = line.unitCostMinor / 100;
             const lineTotal = qty * unitCost;
             totalAmount += lineTotal;
 
-            // This automatically updates the stock_level table (WAC logic)
             await this.inventoryService.receiveStock(line.itemId, qty, unitCost, purchaseOrderId);
         }
 
-        // 4. Post to Finance (Debit Inventory 1300, Credit Accounts Payable 2000)
-        // Note: You must make sure GL Accounts 1300 and 2000 exist in the DB!
         await this.financeService.postJournalEntry(new Date().toISOString().split('T')[0], `Received PO ${purchaseOrderId}`, [
-            { glCode: '1300', debit: totalAmount, credit: 0 }, // Debit Inventory
-            { glCode: '2000', debit: 0, credit: totalAmount }  // Credit Accounts Payable
+            { glCode: '1300', debit: totalAmount, credit: 0 },
+            { glCode: '2000', debit: 0, credit: totalAmount }
         ]);
 
         return { success: true, purchaseOrderId, totalAmount };

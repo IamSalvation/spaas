@@ -8,22 +8,24 @@ export default function SalesPage() {
     const { logout } = useAuth();
     const [customers, setCustomers] = useState<any[]>([]);
     const [items, setItems] = useState<any[]>([]);
+    const [orders, setOrders] = useState<any[]>([]);
 
-    // Order Form State
     const [customerId, setCustomerId] = useState('');
     const [orderLines, setOrderLines] = useState([{ itemId: '', quantity: 1, unitPrice: 0 }]);
     const [message, setMessage] = useState('');
 
-    // Fetch Master Data
+    const fetchData = async () => {
+        const [partiesRes, itemsRes, ordersRes] = await Promise.all([
+            api.get('/masterdata/parties'),
+            api.get('/masterdata/items'),
+            api.get('/sales/orders')
+        ]);
+        setCustomers(partiesRes.data.filter((p: any) => p.type === 'customer'));
+        setItems(itemsRes.data);
+        setOrders(ordersRes.data);
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            const [partiesRes, itemsRes] = await Promise.all([
-                api.get('/masterdata/parties'),
-                api.get('/masterdata/items')
-            ]);
-            setCustomers(partiesRes.data.filter((p: any) => p.type === 'customer'));
-            setItems(itemsRes.data);
-        };
         fetchData();
     }, []);
 
@@ -41,7 +43,6 @@ export default function SalesPage() {
         e.preventDefault();
         setMessage('Creating Order...');
         try {
-            // 1. Create Sales Order
             const res = await api.post('/sales/orders', {
                 customerId,
                 orderDate: new Date().toISOString().split('T')[0],
@@ -51,7 +52,6 @@ export default function SalesPage() {
             const orderId = res.data.id;
             setMessage('Order created! Invoicing now...');
 
-            // 2. Automatically Invoice it
             await api.post('/sales/invoices', {
                 salesOrderId: orderId,
                 invoiceDate: new Date().toISOString().split('T')[0]
@@ -59,6 +59,7 @@ export default function SalesPage() {
 
             setMessage('✅ Order Created and Invoiced successfully!');
             setOrderLines([{ itemId: '', quantity: 1, unitPrice: 0 }]);
+            fetchData(); // Refresh tables
         } catch (err: any) {
             setMessage(`❌ Error: ${err.response?.data?.message || 'Failed to create order'}`);
         }
@@ -83,7 +84,7 @@ export default function SalesPage() {
                     </div>
                 )}
 
-                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
                     <form onSubmit={handleSubmit}>
                         <div className="mb-6">
                             <label className="block text-sm font-medium mb-2">Customer</label>
@@ -117,6 +118,35 @@ export default function SalesPage() {
                             </button>
                         </div>
                     </form>
+                </div>
+
+                {/* Recent Sales Orders Table */}
+                <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                    <div className="p-4 border-b border-gray-700 bg-gray-800/50">
+                        <h2 className="text-lg font-bold">Recent Sales Orders</h2>
+                    </div>
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-900/50 text-gray-400 border-b border-gray-700">
+                                <th className="p-4 font-medium">Customer</th>
+                                <th className="p-4 font-medium">Date</th>
+                                <th className="p-4 font-medium">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {orders.map((o: any) => (
+                                <tr key={o.id} className="border-b border-gray-700/50">
+                                    <td className="p-4">{o.customer_name}</td>
+                                    <td className="p-4 text-gray-400">{o.order_date}</td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${o.status === 'invoiced' ? 'bg-green-900/50 text-green-400' : 'bg-gray-700 text-gray-300'}`}>
+                                            {o.status.toUpperCase()}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

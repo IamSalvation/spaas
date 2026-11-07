@@ -35,6 +35,9 @@ export default function DashboardPage() {
                         <Link href="/sales" className="text-gray-400 hover:text-white underline">
                             Sales
                         </Link>
+                        <Link href="/inventory" className="text-gray-400 hover:text-white underline">
+                            Inventory
+                        </Link>
                     </div>
                     <button onClick={logout} className="bg-red-600/20 text-red-400 px-4 py-2 rounded hover:bg-red-600/40 transition">
                         Logout

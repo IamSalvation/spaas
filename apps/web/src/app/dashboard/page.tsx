@@ -5,7 +5,7 @@ import { api } from '../../lib/api';
 import Link from 'next/link';
 
 export default function DashboardPage() {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth(); // <-- Added user
     const [stats, setStats] = useState({ totalItems: 0, activeCustomers: 0, totalRevenue: 0 });
     const [loading, setLoading] = useState(true);
 
@@ -29,24 +29,38 @@ export default function DashboardPage() {
                 <header className="flex justify-between items-center mb-8">
                     <div className="flex items-center gap-6">
                         <h1 className="text-3xl font-bold text-blue-400">SPAAS Dashboard</h1>
+
+                        {/* Role-Based Navigation Links */}
+                        {(user?.role === 'admin' || user?.role === 'sales') && (
+                            <Link href="/sales" className="text-gray-400 hover:text-white underline">
+                                Sales
+                            </Link>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'procurement') && (
+                            <Link href="/procurement" className="text-gray-400 hover:text-white underline">
+                                Procurement
+                            </Link>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'procurement') && (
+                            <Link href="/inventory" className="text-gray-400 hover:text-white underline">
+                                Inventory
+                            </Link>
+                        )}
+
+                        {/* Everyone can see these */}
                         <Link href="/masterdata" className="text-gray-400 hover:text-white underline">
                             Master Data
-                        </Link>
-                        <Link href="/sales" className="text-gray-400 hover:text-white underline">
-                            Sales
-                        </Link>
-                        <Link href="/inventory" className="text-gray-400 hover:text-white underline">
-                            Inventory
-                        </Link>
-                        <Link href="/procurement" className="text-gray-400 hover:text-white underline">
-                            Procurement
-                        </Link>
-                        <Link href="/manufacturing" className="text-gray-400 hover:text-white underline">
-                            Manufacturing
                         </Link>
                         <Link href="/reports" className="text-gray-400 hover:text-white underline">
                             Reports
                         </Link>
+
+                        {/* Only Admins can see this */}
+                        {user?.role === 'admin' && (
+                            <Link href="/team" className="text-gray-400 hover:text-white underline">
+                                Team
+                            </Link>
+                        )}
                     </div>
                     <button onClick={logout} className="bg-red-600/20 text-red-400 px-4 py-2 rounded hover:bg-red-600/40 transition">
                         Logout
@@ -75,8 +89,8 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-                            <h2 className="text-xl font-bold mb-4">Welcome to SPAAS</h2>
-                            <p className="text-gray-400">Your multi-tenant ERP is up and running.</p>
+                            <h2 className="text-xl font-bold mb-4">Welcome to SPAAS, {user?.email}</h2>
+                            <p className="text-gray-400">Your role is: <span className="font-bold capitalize">{user?.role}</span></p>
                         </div>
                     </>
                 )}

@@ -48,6 +48,26 @@ export class IdentityService {
         return this.generateToken(user);
     }
 
+    async createUser(email: string, pass: string, role: string) {
+        const context = TenantStore.getStore();
+        if (!context) throw new UnauthorizedException('No tenant context');
+
+        const passwordHash = await bcrypt.hash(pass, 10);
+
+        return await withTenant(async (tx: PostgresJsDatabase<any>) => {
+            const [newUser] = await tx.insert(users).values({
+                tenantId: context.tenantId,
+                email,
+                passwordHash,
+                role
+            }).returning();
+
+            // Don't return the password hash to the client
+            const { passwordHash: _, ...result } = newUser;
+            return result;
+        });
+    }
+
     private generateToken(user: any) {
         const payload = { sub: user.id, email: user.email, tenantId: user.tenantId, role: user.role };
         return {

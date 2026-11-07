@@ -5,7 +5,7 @@ import { api } from '../../lib/api';
 import Link from 'next/link';
 
 export default function DashboardPage() {
-    const { logout, user } = useAuth(); // <-- Added user
+    const { logout, user } = useAuth();
     const [stats, setStats] = useState({ totalItems: 0, activeCustomers: 0, totalRevenue: 0 });
     const [loading, setLoading] = useState(true);
 
@@ -55,10 +55,15 @@ export default function DashboardPage() {
                             Reports
                         </Link>
 
-                        {/* Only Admins can see this */}
+                        {/* Only Admins can see these */}
                         {user?.role === 'admin' && (
                             <Link href="/team" className="text-gray-400 hover:text-white underline">
                                 Team
+                            </Link>
+                        )}
+                        {user?.role === 'admin' && (
+                            <Link href="/audit" className="text-gray-400 hover:text-white underline">
+                                Audit Log
                             </Link>
                         )}
                     </div>

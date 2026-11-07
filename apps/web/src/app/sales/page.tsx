@@ -65,6 +65,32 @@ export default function SalesPage() {
         }
     };
 
+    // New secure download handler
+    const handleDownload = async (orderId: string) => {
+        try {
+            const response = await api.get(`/documents/invoice/${orderId}`, {
+                responseType: 'blob', // Tell axios to expect a file
+            });
+
+            // Create a temporary URL for the file
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `invoice-${orderId}.pdf`);
+
+            // Trigger the download
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Failed to download invoice', err);
+            alert('Failed to download invoice. Please make sure you are logged in.');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-white p-8">
             <div className="max-w-6xl mx-auto">
@@ -131,6 +157,7 @@ export default function SalesPage() {
                                 <th className="p-4 font-medium">Customer</th>
                                 <th className="p-4 font-medium">Date</th>
                                 <th className="p-4 font-medium">Status</th>
+                                <th className="p-4 font-medium">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -142,6 +169,14 @@ export default function SalesPage() {
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${o.status === 'invoiced' ? 'bg-green-900/50 text-green-400' : 'bg-gray-700 text-gray-300'}`}>
                                             {o.status.toUpperCase()}
                                         </span>
+                                    </td>
+                                    <td className="p-4">
+                                        <button
+                                            onClick={() => handleDownload(o.id)}
+                                            className="text-blue-400 hover:text-blue-300 underline text-sm font-medium"
+                                        >
+                                            Download Invoice
+                                        </button>
                                     </td>
                                 </tr>
                             ))}

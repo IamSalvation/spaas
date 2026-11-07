@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core'; // <-- Add this
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IdentityModule } from '@spaas/identity';
@@ -11,8 +11,9 @@ import { InventoryModule } from '@spaas/inventory';
 import { ProcurementModule } from '@spaas/procurement';
 import { ManufacturingModule } from '@spaas/manufacturing';
 import { AnalyticsModule } from '@spaas/analytics';
-import { ComplianceModule } from '@spaas/compliance'; // <-- Add this
-import { AuditInterceptor } from './audit.interceptor'; // <-- Add this
+import { ComplianceModule } from '@spaas/compliance';
+import { DocumentsModule } from '@spaas/documents'; // <-- Add this
+import { AuditInterceptor } from './audit.interceptor';
 
 @Module({
   imports: [
@@ -25,14 +26,15 @@ import { AuditInterceptor } from './audit.interceptor'; // <-- Add this
     ProcurementModule,
     ManufacturingModule,
     AnalyticsModule,
-    ComplianceModule // <-- Add this
+    ComplianceModule,
+    DocumentsModule // <-- Add this
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_INTERCEPTOR,
-      useClass: AuditInterceptor, // <-- Register the interceptor globally
+      useClass: AuditInterceptor,
     },
   ],
 })

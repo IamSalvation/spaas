@@ -53,6 +53,9 @@
       ],
       "@spaas/compliance": [
         "./libs/compliance/src/index.ts"
+      ],
+      "@spaas/documents": [
+        "./libs/documents/src/index.ts"
       ]
     }
   },

@@ -7,9 +7,12 @@ import { AppModule } from './app/app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS so your frontend (Vercel and localhost) can talk to it
+  // Enable CORS and restrict it to your live frontend and local development
   app.enableCors({
-    origin: true, // Allows all origins. We can restrict this to specific domains later.
+    origin: [
+      'http://localhost:4200',
+      'https://spaas.vercel.app' // <-- Your live Vercel URL
+    ],
     credentials: true,
   });
 

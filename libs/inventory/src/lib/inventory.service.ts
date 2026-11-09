@@ -31,7 +31,7 @@ export class InventoryService {
 
                 await tx.update(stockLevels)
                     .set({ quantityOnHand: newQty.toString(), totalValueMinor: newValue })
-                    .where(eq(stockLevels.id, existing.id));
+                    .where(and(eq(stockLevels.id, existing.id), eq(stockLevels.tenantId, context.tenantId)));
 
                 return { ...existing, quantityOnHand: newQty.toString(), totalValueMinor: newValue };
             } else {
@@ -66,9 +66,8 @@ export class InventoryService {
 
             await tx.update(stockLevels)
                 .set({ quantityOnHand: newQty.toString(), totalValueMinor: Math.round(newValue) })
-                .where(eq(stockLevels.id, existing.id));
+                .where(and(eq(stockLevels.id, existing.id), eq(stockLevels.tenantId, context.tenantId)));
 
-            // Record the movement
             await tx.insert(stockMovements).values({
                 tenantId: context.tenantId, itemId, movementType: 'issue',
                 quantity: quantity.toString(), unitCostMinor: Math.round(avgUnitCostMinor), referenceId
@@ -79,8 +78,13 @@ export class InventoryService {
     }
 
     async getStockLevel(itemId: string) {
+        const context = TenantStore.getStore();
+        if (!context) throw new BadRequestException('No tenant context');
+
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            const [level] = await tx.select().from(stockLevels).where(eq(stockLevels.itemId, itemId));
+            const [level] = await tx.select().from(stockLevels).where(
+                and(eq(stockLevels.tenantId, context.tenantId), eq(stockLevels.itemId, itemId))
+            );
             return level || { quantityOnHand: '0', totalValueMinor: 0 };
         });
     }

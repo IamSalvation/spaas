@@ -1,17 +1,13 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { InventoryService } from '@spaas/inventory';
-import { FinanceService } from '@spaas/finance';
 import { boms, productionOrders } from './manufacturing.module';
 
 @Injectable()
 export class ManufacturingService {
-    constructor(
-        private readonly inventoryService: InventoryService,
-        private readonly financeService: FinanceService
-    ) { }
+    constructor(private readonly inventoryService: InventoryService) { }
 
     async createBom(productItemId: string, components: { componentItemId: string, quantity: number }[]) {
         const context = TenantStore.getStore();
@@ -48,35 +44,36 @@ export class ManufacturingService {
         const context = TenantStore.getStore();
         if (!context) throw new BadRequestException('No tenant context');
 
-        // 1. Get the Order and BOM
         const [order] = await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            return await tx.select().from(productionOrders).where(eq(productionOrders.id, orderId));
+            return await tx.select().from(productionOrders).where(
+                and(eq(productionOrders.id, orderId), eq(productionOrders.tenantId, context.tenantId))
+            );
         });
 
         if (!order) throw new BadRequestException('Order not found');
         if (order.status === 'completed') throw new BadRequestException('Order already completed');
 
         const bomComponents = await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            return await tx.select().from(boms).where(eq(boms.productItemId, order.productItemId));
+            return await tx.select().from(boms).where(
+                and(eq(boms.productItemId, order.productItemId), eq(boms.tenantId, context.tenantId))
+            );
         });
 
         const targetQty = Number(order.targetQuantity);
         let totalMaterialCost = 0;
 
-        // 2. Consume Components
         for (const comp of bomComponents) {
             const qtyRequired = Number(comp.quantityRequired) * targetQty;
             const { valueIssuedMinor } = await this.inventoryService.issueStock(comp.componentItemId, qtyRequired, orderId);
             totalMaterialCost += valueIssuedMinor;
         }
 
-        // 3. Add Finished Goods to Inventory
         const unitCost = (totalMaterialCost / 100) / targetQty;
         await this.inventoryService.receiveStock(order.productItemId, targetQty, unitCost, orderId);
 
-        // 4. Update order status
         await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            await tx.update(productionOrders).set({ status: 'completed' }).where(eq(productionOrders.id, orderId));
+            await tx.update(productionOrders).set({ status: 'completed' })
+                .where(and(eq(productionOrders.id, orderId), eq(productionOrders.tenantId, context.tenantId)));
         });
 
         return { success: true, totalMaterialCost: totalMaterialCost / 100 };

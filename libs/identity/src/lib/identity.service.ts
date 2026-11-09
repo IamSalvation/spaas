@@ -5,18 +5,20 @@ import { db, withTenant, TenantStore } from '@spaas/shared';
 import { tenants, users } from './identity.module';
 import { eq, sql } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class IdentityService {
-    constructor(private readonly jwtService: JwtService) { }
+    constructor(
+        private readonly jwtService: JwtService,
+        private readonly emailService: EmailService,
+    ) { }
 
     async registerCompany(companyName: string, email: string, pass: string) {
         const passwordHash = await bcrypt.hash(pass, 10);
 
-        // Auto-generate a slug from the company name
         const baseSlug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-        // Ensure uniqueness
         let slug = baseSlug;
         let counter = 1;
         while (true) {
@@ -25,7 +27,6 @@ export class IdentityService {
             slug = `${baseSlug}-${counter++}`;
         }
 
-        // 1. Create the Tenant with the slug
         const [tenant] = await db.insert(tenants).values({
             name: companyName,
             slug,
@@ -33,7 +34,6 @@ export class IdentityService {
             tier: 'v1',
         }).returning();
 
-        // 2. Create the User (first user = owner) inside a Tenant Context
         const user = await TenantStore.run({ tenantId: tenant.id, userId: 'system' }, async () => {
             return await withTenant(async (tx: PostgresJsDatabase<any>) => {
                 const [newUser] = await tx.insert(users).values({
@@ -48,11 +48,24 @@ export class IdentityService {
             });
         });
 
+        // Fire off emails in the background (don't block the registration response)
+        void this.emailService.sendWelcomeEmail({
+            to: email,
+            companyName,
+            slug,
+            loginEmail: email,
+        });
+        void this.emailService.sendNewSignupAlert({
+            companyName,
+            slug,
+            ownerEmail: email,
+            tenantId: tenant.id,
+        });
+
         return this.generateToken(user);
     }
 
     async login(email: string, pass: string, identifier: string) {
-        // 1. Resolve the identifier (slug or UUID) to a tenant
         const tenantLookup = await db.execute(sql`
       SELECT id, status FROM identity.tenant
       WHERE slug = ${identifier} OR id::text = ${identifier}
@@ -73,7 +86,6 @@ export class IdentityService {
             throw new UnauthorizedException('This account has been deleted.');
         }
 
-        // 2. Find the user in that tenant
         const user = await TenantStore.run({ tenantId, userId: 'system' }, async () => {
             return await withTenant(async (tx: PostgresJsDatabase<any>) => {
                 const results = await tx.select().from(users).where(eq(users.email, email));

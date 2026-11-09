@@ -2,9 +2,12 @@ import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/co
 import { db } from '@spaas/shared';
 import { tenants, users } from './identity.module';
 import { eq, sql as drizzleSql } from 'drizzle-orm';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class PlatformService {
+  constructor(private readonly emailService: EmailService) { }
+
   private checkPlatformAdmin(user: any) {
     if (!user || !user.isPlatformAdmin) {
       throw new UnauthorizedException('Access denied. Platform admin only.');
@@ -40,10 +43,7 @@ export class PlatformService {
     const v3 = Number(stats['tier_v3_count']);
     const mrr = v1 * 49 + v2 * 99 + v3 * 199;
 
-    return {
-      ...stats,
-      mrr_cents: mrr * 100,
-    };
+    return { ...stats, mrr_cents: mrr * 100 };
   }
 
   async listAllTenants(requester: any) {
@@ -104,6 +104,23 @@ export class PlatformService {
       throw new UnauthorizedException('Invalid status');
     }
     const [updated] = await db.update(tenants).set({ status }).where(eq(tenants.id, tenantId)).returning();
+
+    // If the tenant was paused, notify the tenant owner
+    if (status === 'paused' && updated) {
+      try {
+        const ownerRows = await db.select().from(users).where(eq(users.tenantId, tenantId));
+        const owner = ownerRows.find((u) => u.isOwner) || ownerRows[0];
+        if (owner) {
+          void this.emailService.sendPausedEmail({
+            to: owner.email,
+            companyName: updated.name,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to send pause email', err);
+      }
+    }
+
     return updated;
   }
 
@@ -145,12 +162,8 @@ export class PlatformService {
     }
 
     await db.transaction(async (tx) => {
-      // Set tenant context so RLS-enabled tables let the DELETEs through.
       await tx.execute(drizzleSql`SELECT set_config('app.current_tenant', ${tenantId}, true)`);
 
-      // ---------------- FINANCE ----------------
-      // Delete journal lines through their parents (gl_account or journal_entry).
-      // This handles the case where journal_line rows have a stale/mismatched tenant_id.
       await tx.execute(drizzleSql`
         DELETE FROM finance.journal_line
         WHERE gl_account_id IN (SELECT id FROM finance.gl_account WHERE tenant_id = ${tenantId})
@@ -159,7 +172,6 @@ export class PlatformService {
       await tx.execute(drizzleSql`DELETE FROM finance.journal_entry WHERE tenant_id = ${tenantId}`);
       await tx.execute(drizzleSql`DELETE FROM finance.gl_account WHERE tenant_id = ${tenantId}`);
 
-      // ---------------- SALES ----------------
       await tx.execute(drizzleSql`
         DELETE FROM sales.sales_order_line
         WHERE sales_order_id IN (SELECT id FROM sales.sales_order WHERE tenant_id = ${tenantId})
@@ -167,29 +179,23 @@ export class PlatformService {
       await tx.execute(drizzleSql`DELETE FROM sales.sales_invoice WHERE tenant_id = ${tenantId}`);
       await tx.execute(drizzleSql`DELETE FROM sales.sales_order WHERE tenant_id = ${tenantId}`);
 
-      // ---------------- PROCUREMENT ----------------
       await tx.execute(drizzleSql`
         DELETE FROM procurement.purchase_order_line
         WHERE purchase_order_id IN (SELECT id FROM procurement.purchase_order WHERE tenant_id = ${tenantId})
       `);
       await tx.execute(drizzleSql`DELETE FROM procurement.purchase_order WHERE tenant_id = ${tenantId}`);
 
-      // ---------------- MANUFACTURING ----------------
       await tx.execute(drizzleSql`DELETE FROM manufacturing.production_order WHERE tenant_id = ${tenantId}`);
       await tx.execute(drizzleSql`DELETE FROM manufacturing.bom WHERE tenant_id = ${tenantId}`);
 
-      // ---------------- INVENTORY ----------------
       await tx.execute(drizzleSql`DELETE FROM inventory.stock_movement WHERE tenant_id = ${tenantId}`);
       await tx.execute(drizzleSql`DELETE FROM inventory.stock_level WHERE tenant_id = ${tenantId}`);
 
-      // ---------------- MASTERDATA ----------------
       await tx.execute(drizzleSql`DELETE FROM masterdata.item WHERE tenant_id = ${tenantId}`);
       await tx.execute(drizzleSql`DELETE FROM masterdata.party WHERE tenant_id = ${tenantId}`);
 
-      // ---------------- COMPLIANCE ----------------
       await tx.execute(drizzleSql`DELETE FROM compliance.audit_log WHERE tenant_id = ${tenantId}`);
 
-      // ---------------- IDENTITY ----------------
       await tx.execute(drizzleSql`DELETE FROM identity.user WHERE tenant_id = ${tenantId}`);
       await tx.execute(drizzleSql`DELETE FROM identity.tenant WHERE id = ${tenantId}`);
     });

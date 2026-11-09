@@ -6,3 +6,4 @@ export * from './lib/current-user.decorator';
 export * from './lib/tenant.interceptor';
 export * from './lib/platform.controller';
 export * from './lib/platform.service';
+export * from './lib/email.service';

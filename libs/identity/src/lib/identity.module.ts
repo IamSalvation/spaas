@@ -5,6 +5,7 @@ import { IdentityService } from './identity.service';
 import { IdentityController } from './identity.controller';
 import { PlatformService } from './platform.service';
 import { PlatformController } from './platform.controller';
+import { EmailService } from './email.service';
 
 export const identitySchema = pgSchema('identity');
 
@@ -41,7 +42,7 @@ export const users = identitySchema.table('user', {
 		}),
 	],
 	controllers: [IdentityController, PlatformController],
-	providers: [IdentityService, PlatformService],
-	exports: [IdentityService, PlatformService, JwtModule],
+	providers: [IdentityService, PlatformService, EmailService],
+	exports: [IdentityService, PlatformService, EmailService, JwtModule],
 })
 export class IdentityModule { }

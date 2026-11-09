@@ -3,3 +3,6 @@ export * from './lib/identity.controller';
 export * from './lib/identity.service';
 export * from './lib/jwt-auth.guard';
 export * from './lib/current-user.decorator';
+export * from './lib/tenant.interceptor';
+export * from './lib/platform.controller';
+export * from './lib/platform.service';

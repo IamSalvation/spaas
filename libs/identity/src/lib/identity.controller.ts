@@ -16,12 +16,14 @@ export class IdentityController {
 
     @Post('login')
     async login(@Body() body: any) {
-        if (!body.tenantId) throw new UnauthorizedException('Tenant ID required for login');
-        return this.identityService.login(body.email, body.password, body.tenantId);
+        if (!body.email || !body.password || !body.identifier) {
+            throw new UnauthorizedException('Missing email, password, or company workspace');
+        }
+        return this.identityService.login(body.email, body.password, body.identifier);
     }
 
     @Post('users')
-    @UseGuards(JwtAuthGuard) // Only logged-in admins can create users
+    @UseGuards(JwtAuthGuard)
     async createUser(@Body() body: any) {
         if (!body.email || !body.password || !body.role) {
             throw new UnauthorizedException('Missing required fields');

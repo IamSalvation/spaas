@@ -1,12 +1,14 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { TenantStore } from '@spaas/shared';
+import { db } from '@spaas/shared';
+import { tenants } from './identity.module';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
     constructor(private jwtService: JwtService) { }
 
-    canActivate(context: ExecutionContext): boolean {
+    async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
         const authHeader = request.headers.authorization;
 
@@ -15,18 +17,27 @@ export class JwtAuthGuard implements CanActivate {
         }
 
         const token = authHeader.split(' ')[1];
+
+        let payload: any;
         try {
-            const payload = this.jwtService.verify(token);
-
-            // Attach user to the request
-            request.user = payload;
-
-            // CRUCIAL: Activate the Tenant Context so RLS policies work
-            TenantStore.enterWith({ tenantId: payload.tenantId, userId: payload.sub });
-
-            return true;
+            payload = this.jwtService.verify(token);
         } catch {
             throw new UnauthorizedException('Invalid token');
         }
+
+        // Check if tenant is paused or deleted
+        const [tenant] = await db.select().from(tenants).where(eq(tenants.id, payload.tenantId));
+        if (!tenant) throw new UnauthorizedException('Tenant not found');
+
+        if (tenant.status === 'paused') {
+            throw new UnauthorizedException('This account has been paused. Please contact support.');
+        }
+        if (tenant.status === 'deleted') {
+            throw new UnauthorizedException('This account has been deleted.');
+        }
+
+        // Attach user to request — TenantInterceptor will wrap this in TenantStore
+        request.user = payload;
+        return true;
     }
 }

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
     token: string | null;
-    user: any | null; // Store the whole user object
-    login: (email: string, pass: string, tenantId: string) => Promise<void>;
+    user: any | null;
+    login: (email: string, pass: string, identifier: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -26,13 +26,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const login = async (email: string, pass: string, tenantId: string) => {
-        const res = await api.post('/auth/login', { email, password: pass, tenantId });
+    const login = async (email: string, pass: string, identifier: string) => {
+        const res = await api.post('/auth/login', { email, password: pass, identifier });
         localStorage.setItem('spaas_token', res.data.access_token);
-        localStorage.setItem('spaas_user', JSON.stringify(res.data.user)); // Save user
+        localStorage.setItem('spaas_user', JSON.stringify(res.data.user));
         setToken(res.data.access_token);
         setUser(res.data.user);
-        router.push('/dashboard');
+
+        // Platform admins land on the console; regular users land on the dashboard
+        if (res.data.user.isPlatformAdmin) {
+            router.push('/platform');
+        } else {
+            router.push('/dashboard');
+        }
     };
 
     const logout = () => {

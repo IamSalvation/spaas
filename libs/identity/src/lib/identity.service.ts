@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { db, withTenant, TenantStore } from '@spaas/shared';
 import { tenants, users } from './identity.module';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 @Injectable()
@@ -13,17 +13,36 @@ export class IdentityService {
     async registerCompany(companyName: string, email: string, pass: string) {
         const passwordHash = await bcrypt.hash(pass, 10);
 
-        // 1. Create the Tenant
-        const [tenant] = await db.insert(tenants).values({ name: companyName }).returning();
+        // Auto-generate a slug from the company name
+        const baseSlug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-        // 2. Create the User inside a Tenant Context so RLS allows it
+        // Ensure uniqueness
+        let slug = baseSlug;
+        let counter = 1;
+        while (true) {
+            const existing = await db.execute(sql`SELECT id FROM identity.tenant WHERE slug = ${slug}`);
+            if (existing.length === 0) break;
+            slug = `${baseSlug}-${counter++}`;
+        }
+
+        // 1. Create the Tenant with the slug
+        const [tenant] = await db.insert(tenants).values({
+            name: companyName,
+            slug,
+            status: 'active',
+            tier: 'v1',
+        }).returning();
+
+        // 2. Create the User (first user = owner) inside a Tenant Context
         const user = await TenantStore.run({ tenantId: tenant.id, userId: 'system' }, async () => {
             return await withTenant(async (tx: PostgresJsDatabase<any>) => {
                 const [newUser] = await tx.insert(users).values({
                     tenantId: tenant.id,
                     email,
                     passwordHash,
-                    role: 'admin'
+                    role: 'admin',
+                    isOwner: true,
+                    isPlatformAdmin: false,
                 }).returning();
                 return newUser;
             });
@@ -32,7 +51,29 @@ export class IdentityService {
         return this.generateToken(user);
     }
 
-    async login(email: string, pass: string, tenantId: string) {
+    async login(email: string, pass: string, identifier: string) {
+        // 1. Resolve the identifier (slug or UUID) to a tenant
+        const tenantLookup = await db.execute(sql`
+      SELECT id, status FROM identity.tenant
+      WHERE slug = ${identifier} OR id::text = ${identifier}
+      LIMIT 1
+    `);
+
+        if (tenantLookup.length === 0) {
+            throw new UnauthorizedException('Company workspace not found');
+        }
+
+        const tenantId = tenantLookup[0]['id'] as string;
+        const tenantStatus = tenantLookup[0]['status'] as string;
+
+        if (tenantStatus === 'paused') {
+            throw new UnauthorizedException('This account has been paused. Please contact support.');
+        }
+        if (tenantStatus === 'deleted') {
+            throw new UnauthorizedException('This account has been deleted.');
+        }
+
+        // 2. Find the user in that tenant
         const user = await TenantStore.run({ tenantId, userId: 'system' }, async () => {
             return await withTenant(async (tx: PostgresJsDatabase<any>) => {
                 const results = await tx.select().from(users).where(eq(users.email, email));
@@ -59,20 +100,35 @@ export class IdentityService {
                 tenantId: context.tenantId,
                 email,
                 passwordHash,
-                role
+                role,
+                isOwner: false,
+                isPlatformAdmin: false,
             }).returning();
 
-            // Don't return the password hash to the client
             const { passwordHash: _, ...result } = newUser;
             return result;
         });
     }
 
     private generateToken(user: any) {
-        const payload = { sub: user.id, email: user.email, tenantId: user.tenantId, role: user.role };
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            tenantId: user.tenantId,
+            role: user.role,
+            isPlatformAdmin: user.isPlatformAdmin,
+            isOwner: user.isOwner,
+        };
         return {
             access_token: this.jwtService.sign(payload),
-            user: { id: user.id, email: user.email, tenantId: user.tenantId, role: user.role }
+            user: {
+                id: user.id,
+                email: user.email,
+                tenantId: user.tenantId,
+                role: user.role,
+                isPlatformAdmin: user.isPlatformAdmin,
+                isOwner: user.isOwner,
+            }
         };
     }
 }

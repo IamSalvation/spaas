@@ -12,7 +12,8 @@ import { ProcurementModule } from '@spaas/procurement';
 import { ManufacturingModule } from '@spaas/manufacturing';
 import { AnalyticsModule } from '@spaas/analytics';
 import { ComplianceModule } from '@spaas/compliance';
-import { DocumentsModule } from '@spaas/documents'; // <-- Add this
+import { DocumentsModule } from '@spaas/documents';
+import { TenantInterceptor } from '@spaas/identity';
 import { AuditInterceptor } from './audit.interceptor';
 
 @Module({
@@ -27,14 +28,18 @@ import { AuditInterceptor } from './audit.interceptor';
     ManufacturingModule,
     AnalyticsModule,
     ComplianceModule,
-    DocumentsModule // <-- Add this
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_INTERCEPTOR,
-      useClass: AuditInterceptor,
+      useClass: TenantInterceptor,  // Runs FIRST - sets tenant context
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,   // Runs SECOND - uses tenant context
     },
   ],
 })

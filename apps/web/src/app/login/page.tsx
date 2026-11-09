@@ -6,7 +6,7 @@ export default function LoginPage() {
     const { login } = useAuth();
     const [email, setEmail] = useState('admin@acme.com');
     const [password, setPassword] = useState('superpassword123');
-    const [tenantId, setTenantId] = useState('5e9d39b1-4214-4d01-b69e-2e3d9973d4ae');
+    const [identifier, setIdentifier] = useState('acme-mfg'); // Slug OR UUID
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -15,9 +15,9 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         try {
-            await login(email, password, tenantId);
+            await login(email, password, identifier);
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Login failed.');
+            setError(err.response?.data?.message || 'Login failed. Check your credentials.');
         } finally {
             setLoading(false);
         }
@@ -31,9 +31,11 @@ export default function LoginPage() {
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1">Company (Tenant ID)</label>
-                        <input type="text" value={tenantId} onChange={(e) => setTenantId(e.target.value)}
-                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 outline-none text-sm" required />
+                        <label className="block text-sm font-medium mb-1">Company Workspace</label>
+                        <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)}
+                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 outline-none text-sm"
+                            placeholder="e.g. acme-mfg" required />
+                        <p className="text-xs text-gray-500 mt-1">Your workspace slug (e.g. acme-mfg)</p>
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1">Email</label>

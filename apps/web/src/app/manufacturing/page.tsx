@@ -9,11 +9,9 @@ export default function ManufacturingPage() {
     const [items, setItems] = useState<any[]>([]);
     const [message, setMessage] = useState('');
 
-    // BOM Form State
     const [productItemId, setProductItemId] = useState('');
     const [bomLines, setBomLines] = useState([{ componentItemId: '', quantity: 1 }]);
 
-    // Production Order State
     const [prodItemId, setProdItemId] = useState('');
     const [targetQuantity, setTargetQuantity] = useState(1);
 
@@ -25,7 +23,6 @@ export default function ManufacturingPage() {
         fetchData();
     }, []);
 
-    // --- BOM Handlers ---
     const handleAddBomLine = () => {
         setBomLines([...bomLines, { componentItemId: '', quantity: 1 }]);
     };
@@ -51,12 +48,10 @@ export default function ManufacturingPage() {
         }
     };
 
-    // --- Production Order Handlers ---
     const handleCreateProduction = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('Creating Production Order...');
         try {
-            // 1. Create Order
             const res = await api.post('/manufacturing/orders', {
                 productItemId: prodItemId,
                 targetQuantity: targetQuantity
@@ -64,12 +59,26 @@ export default function ManufacturingPage() {
             const orderId = res.data.id;
             setMessage('Order created. Completing production...');
 
-            // 2. Complete Order (Triggers Inventory movement)
             await api.post('/manufacturing/orders/complete', {
                 orderId: orderId
             });
 
             setMessage('✅ Production Order Completed! Components consumed, Finished Goods created.');
+
+            // Auto-download the production order PDF
+            try {
+                const pdfRes = await api.get(`/documents/production-order/${orderId}`, { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([pdfRes.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `production-order-${orderId}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Could not download PDF', e);
+            }
         } catch (err: any) {
             setMessage(`❌ Error: ${err.response?.data?.message || 'Failed to complete production'}`);
         }

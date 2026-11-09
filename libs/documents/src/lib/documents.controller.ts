@@ -20,4 +20,30 @@ export class DocumentsController {
 
         res.end(pdfBuffer);
     }
+
+    @Get('purchase-order/:id')
+    async getPurchaseOrder(@Param('id') id: string, @Res() res: Response) {
+        const pdfBuffer = await this.documentsService.generatePurchaseOrderPdf(id);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename=po-${id}.pdf`,
+            'Content-Length': pdfBuffer.length,
+        });
+
+        res.end(pdfBuffer);
+    }
+
+    @Get('production-order/:id')
+    async getProductionOrder(@Param('id') id: string, @Res() res: Response) {
+        const pdfBuffer = await this.documentsService.generateProductionOrderPdf(id);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename=prod-order-${id}.pdf`,
+            'Content-Length': pdfBuffer.length,
+        });
+
+        res.end(pdfBuffer);
+    }
 }

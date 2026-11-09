@@ -7,6 +7,11 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class PlatformController {
     constructor(private readonly platformService: PlatformService) { }
 
+    @Get('stats')
+    async getStats(@Req() req: any) {
+        return this.platformService.getPlatformStats(req.user);
+    }
+
     @Get('tenants')
     async getAll(@Req() req: any) {
         return this.platformService.listAllTenants(req.user);

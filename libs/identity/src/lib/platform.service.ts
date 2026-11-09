@@ -11,6 +11,41 @@ export class PlatformService {
     }
   }
 
+  async getPlatformStats(requester: any) {
+    this.checkPlatformAdmin(requester);
+
+    const rows = await db.execute(drizzleSql`
+      SELECT
+        (SELECT count(*)::int FROM identity.tenant) as total_tenants,
+        (SELECT count(*)::int FROM identity.tenant WHERE status = 'active') as active_tenants,
+        (SELECT count(*)::int FROM identity.tenant WHERE status = 'pending') as pending_tenants,
+        (SELECT count(*)::int FROM identity.tenant WHERE status = 'paused') as paused_tenants,
+        (SELECT count(*)::int FROM identity.tenant WHERE status = 'deleted') as deleted_tenants,
+        (SELECT count(*)::int FROM identity.user) as total_users,
+        (SELECT count(*)::int FROM masterdata.item) as total_items,
+        (SELECT count(*)::int FROM sales.sales_order) as total_sales_orders,
+        (SELECT COALESCE(SUM(jl.credit_minor), 0)::bigint 
+          FROM finance.journal_line jl 
+          JOIN finance.gl_account gl ON gl.id = jl.gl_account_id 
+          WHERE gl.code = '4000') as platform_revenue_minor,
+        (SELECT count(*)::int FROM identity.tenant WHERE created_at >= NOW() - INTERVAL '7 days') as new_signups_7d,
+        (SELECT count(*)::int FROM identity.tenant WHERE status = 'active' AND tier = 'v1') as tier_v1_count,
+        (SELECT count(*)::int FROM identity.tenant WHERE status = 'active' AND tier = 'v2') as tier_v2_count,
+        (SELECT count(*)::int FROM identity.tenant WHERE status = 'active' AND tier = 'v3') as tier_v3_count
+    `);
+
+    const stats = rows[0];
+    const v1 = Number(stats['tier_v1_count']);
+    const v2 = Number(stats['tier_v2_count']);
+    const v3 = Number(stats['tier_v3_count']);
+    const mrr = v1 * 49 + v2 * 99 + v3 * 199;
+
+    return {
+      ...stats,
+      mrr_cents: mrr * 100,
+    };
+  }
+
   async listAllTenants(requester: any) {
     this.checkPlatformAdmin(requester);
 
@@ -125,7 +160,6 @@ export class PlatformService {
       await tx.execute(drizzleSql`DELETE FROM finance.gl_account WHERE tenant_id = ${tenantId}`);
 
       // ---------------- SALES ----------------
-      // Delete order lines through their parent order, then invoices and orders.
       await tx.execute(drizzleSql`
         DELETE FROM sales.sales_order_line
         WHERE sales_order_id IN (SELECT id FROM sales.sales_order WHERE tenant_id = ${tenantId})

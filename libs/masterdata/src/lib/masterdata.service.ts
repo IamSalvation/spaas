@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { parties, items } from './masterdata.module';
+import { eq, and } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 @Injectable()
@@ -42,14 +43,20 @@ export class MasterdataService {
     }
 
     async getParties() {
+        const context = TenantStore.getStore();
+        if (!context) throw new BadRequestException('No tenant context');
+
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            return await tx.select().from(parties);
+            return await tx.select().from(parties).where(eq(parties.tenantId, context.tenantId));
         });
     }
 
     async getItems() {
+        const context = TenantStore.getStore();
+        if (!context) throw new BadRequestException('No tenant context');
+
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            return await tx.select().from(items);
+            return await tx.select().from(items).where(eq(items.tenantId, context.tenantId));
         });
     }
 }

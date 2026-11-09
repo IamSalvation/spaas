@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { FinanceService } from '@spaas/finance';
 import { salesOrders, salesOrderLines, salesInvoices } from './sales.module';
 
@@ -35,11 +35,16 @@ export class SalesService {
     }
 
     async getSalesOrders() {
+        const context = TenantStore.getStore();
+        if (!context) throw new BadRequestException('No tenant context');
+
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
             const orders = await tx.execute(sql`
         SELECT so.id, so.order_date, so.status, p.name as customer_name 
         FROM sales.sales_order so
         JOIN masterdata.party p ON p.id = so.customer_id
+        WHERE so.tenant_id = ${context.tenantId}
+          AND p.tenant_id = ${context.tenantId}
         ORDER BY so.created_at DESC LIMIT 20
       `);
             return orders;
@@ -50,9 +55,16 @@ export class SalesService {
         const context = TenantStore.getStore();
         if (!context) throw new BadRequestException('No tenant context');
 
+        // Verify the order belongs to this tenant
         const orderLines = await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            return await tx.select().from(salesOrderLines).where(eq(salesOrderLines.salesOrderId, salesOrderId));
+            return await tx.select().from(salesOrderLines)
+                .where(and(
+                    eq(salesOrderLines.salesOrderId, salesOrderId),
+                    eq(salesOrderLines.tenantId, context.tenantId)
+                ));
         });
+
+        if (orderLines.length === 0) throw new NotFoundException('Sales order not found');
 
         const totalMinor = orderLines.reduce((sum, line) => sum + (line.quantity * line.unitPriceMinor), 0);
         const totalAmount = totalMinor / 100;
@@ -65,7 +77,8 @@ export class SalesService {
                 totalMinor,
             }).returning();
 
-            await tx.update(salesOrders).set({ status: 'invoiced' }).where(eq(salesOrders.id, salesOrderId));
+            await tx.update(salesOrders).set({ status: 'invoiced' })
+                .where(and(eq(salesOrders.id, salesOrderId), eq(salesOrders.tenantId, context.tenantId)));
             return inv;
         });
 

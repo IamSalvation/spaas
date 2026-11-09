@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { eq, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { InventoryService } from '@spaas/inventory';
 import { FinanceService } from '@spaas/finance';
 import { purchaseOrders, purchaseOrderLines } from './procurement.module';
@@ -39,11 +39,16 @@ export class ProcurementService {
     }
 
     async getPurchaseOrders() {
+        const context = TenantStore.getStore();
+        if (!context) throw new BadRequestException('No tenant context');
+
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
             const orders = await tx.execute(sql`
         SELECT po.id, po.order_date, po.status, p.name as vendor_name 
         FROM procurement.purchase_order po
         JOIN masterdata.party p ON p.id = po.vendor_id
+        WHERE po.tenant_id = ${context.tenantId}
+          AND p.tenant_id = ${context.tenantId}
         ORDER BY po.created_at DESC LIMIT 20
       `);
             return orders;
@@ -55,13 +60,18 @@ export class ProcurementService {
         if (!context) throw new BadRequestException('No tenant context');
 
         const orderLines = await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            return await tx.select().from(purchaseOrderLines).where(eq(purchaseOrderLines.purchaseOrderId, purchaseOrderId));
+            return await tx.select().from(purchaseOrderLines)
+                .where(and(
+                    eq(purchaseOrderLines.purchaseOrderId, purchaseOrderId),
+                    eq(purchaseOrderLines.tenantId, context.tenantId)
+                ));
         });
 
-        if (orderLines.length === 0) throw new NotFoundException('Purchase Order has no lines');
+        if (orderLines.length === 0) throw new NotFoundException('Purchase Order not found');
 
         await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            await tx.update(purchaseOrders).set({ status: 'received' }).where(eq(purchaseOrders.id, purchaseOrderId));
+            await tx.update(purchaseOrders).set({ status: 'received' })
+                .where(and(eq(purchaseOrders.id, purchaseOrderId), eq(purchaseOrders.tenantId, context.tenantId)));
         });
 
         let totalAmount = 0;

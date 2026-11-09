@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';
@@ -7,26 +7,37 @@ import { sql } from 'drizzle-orm';
 export class AnalyticsService {
     async getDashboardStats() {
         const context = TenantStore.getStore();
-        if (!context) throw new Error('No tenant context');
+        if (!context) throw new BadRequestException('No tenant context');
+        const tenantId = context.tenantId;
 
         return await withTenant(async (tx: PostgresJsDatabase<any>) => {
-            // 1. Count Items
-            const itemsResult = await tx.execute(sql`SELECT count(*) as count FROM masterdata.item`);
+            // 1. Count items — filtered by tenant
+            const itemsResult = await tx.execute(sql`
+        SELECT count(*)::int AS count 
+        FROM masterdata.item 
+        WHERE tenant_id = ${tenantId}
+      `);
             const totalItems = Number(itemsResult[0]['count']);
 
-            // 2. Count Customers
-            const customersResult = await tx.execute(sql`SELECT count(*) as count FROM masterdata.party WHERE type = 'customer'`);
+            // 2. Count customers — filtered by tenant
+            const customersResult = await tx.execute(sql`
+        SELECT count(*)::int AS count 
+        FROM masterdata.party 
+        WHERE tenant_id = ${tenantId} AND type = 'customer'
+      `);
             const activeCustomers = Number(customersResult[0]['count']);
 
-            // 3. Calculate Total Revenue (Sum of credits to revenue account 4000)
+            // 3. Revenue — filtered by tenant
             const revenueResult = await tx.execute(sql`
-        SELECT SUM(credit_minor) as total 
-        FROM finance.journal_line 
-        JOIN finance.gl_account ON finance.gl_account.id = finance.journal_line.gl_account_id
-        WHERE finance.gl_account.code = '4000'
+        SELECT COALESCE(SUM(jl.credit_minor), 0)::bigint AS total 
+        FROM finance.journal_line jl 
+        JOIN finance.gl_account gl ON gl.id = jl.gl_account_id 
+        WHERE gl.code = '4000' 
+          AND gl.tenant_id = ${tenantId}
+          AND jl.tenant_id = ${tenantId}
       `);
             const totalRevenueMinor = Number(revenueResult[0]?.['total'] || 0);
-            const totalRevenue = totalRevenueMinor / 100; // Convert to dollars
+            const totalRevenue = totalRevenueMinor / 100;
 
             return {
                 totalItems,

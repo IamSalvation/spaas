@@ -27,10 +27,11 @@ export class IdentityService {
             slug = `${baseSlug}-${counter++}`;
         }
 
+        // Create tenant as PENDING (not active)
         const [tenant] = await db.insert(tenants).values({
             name: companyName,
             slug,
-            status: 'active',
+            status: 'pending',
             tier: 'v1',
         }).returning();
 
@@ -48,13 +49,7 @@ export class IdentityService {
             });
         });
 
-        // Fire off emails in the background (don't block the registration response)
-        void this.emailService.sendWelcomeEmail({
-            to: email,
-            companyName,
-            slug,
-            loginEmail: email,
-        });
+        // Send ADMIN alert immediately
         void this.emailService.sendNewSignupAlert({
             companyName,
             slug,
@@ -62,7 +57,18 @@ export class IdentityService {
             tenantId: tenant.id,
         });
 
-        return this.generateToken(user);
+        // Send PENDING notification to the user
+        void this.emailService.sendPendingEmail({
+            to: email,
+            companyName,
+            slug,
+        });
+
+        return {
+            tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
+            user: { id: user.id, email: user.email },
+            message: 'Account created. Awaiting approval.',
+        };
     }
 
     async login(email: string, pass: string, identifier: string) {
@@ -79,6 +85,9 @@ export class IdentityService {
         const tenantId = tenantLookup[0]['id'] as string;
         const tenantStatus = tenantLookup[0]['status'] as string;
 
+        if (tenantStatus === 'pending') {
+            throw new UnauthorizedException('Your account is awaiting approval. You will receive an email once approved.');
+        }
         if (tenantStatus === 'paused') {
             throw new UnauthorizedException('This account has been paused. Please contact support.');
         }

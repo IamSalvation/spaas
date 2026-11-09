@@ -103,21 +103,36 @@ export class PlatformService {
     if (!['pending', 'active', 'paused', 'deleted'].includes(status)) {
       throw new UnauthorizedException('Invalid status');
     }
+
+    const [oldTenant] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
+    const oldStatus = oldTenant?.status;
+
     const [updated] = await db.update(tenants).set({ status }).where(eq(tenants.id, tenantId)).returning();
 
-    // If the tenant was paused, notify the tenant owner
-    if (status === 'paused' && updated) {
+    if (updated) {
       try {
         const ownerRows = await db.select().from(users).where(eq(users.tenantId, tenantId));
         const owner = ownerRows.find((u) => u.isOwner) || ownerRows[0];
+
         if (owner) {
-          void this.emailService.sendPausedEmail({
-            to: owner.email,
-            companyName: updated.name,
-          });
+          if (oldStatus === 'pending' && status === 'active') {
+            void this.emailService.sendWelcomeEmail({
+              to: owner.email,
+              companyName: updated.name,
+              slug: updated.slug || '',
+              loginEmail: owner.email,
+            });
+          }
+
+          if (oldStatus === 'active' && status === 'paused') {
+            void this.emailService.sendPausedEmail({
+              to: owner.email,
+              companyName: updated.name,
+            });
+          }
         }
       } catch (err) {
-        console.error('Failed to send pause email', err);
+        console.error('Failed to send status-change email', err);
       }
     }
 

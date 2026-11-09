@@ -3,44 +3,44 @@ import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
-    private readonly logger = new Logger(EmailService.name);
-    private readonly resend: Resend | null;
-    private readonly fromEmail: string;
-    private readonly adminEmail: string;
-    private readonly appUrl: string;
+  private readonly logger = new Logger(EmailService.name);
+  private readonly resend: Resend | null;
+  private readonly fromEmail: string;
+  private readonly adminEmail: string;
+  private readonly appUrl: string;
 
-    constructor() {
-        const apiKey = process.env['RESEND_API_KEY'];
-        this.fromEmail = process.env['PLATFORM_FROM_EMAIL'] || 'notifications@spaas.quickie-studio.com';
-        this.adminEmail = process.env['PLATFORM_ADMIN_EMAIL'] || '';
-        this.appUrl = process.env['PLATFORM_APP_URL'] || 'https://spaas.quickie-studio.com';
-        this.resend = apiKey ? new Resend(apiKey) : null;
-        if (!this.resend) {
-            this.logger.warn('RESEND_API_KEY is missing — email sending is disabled');
-        }
+  constructor() {
+    const apiKey = process.env['RESEND_API_KEY'];
+    this.fromEmail = process.env['PLATFORM_FROM_EMAIL'] || 'notifications@spaas.quickie-studio.com';
+    this.adminEmail = process.env['PLATFORM_ADMIN_EMAIL'] || '';
+    this.appUrl = process.env['PLATFORM_APP_URL'] || 'https://spaas.quickie-studio.com';
+    this.resend = apiKey ? new Resend(apiKey) : null;
+    if (!this.resend) {
+      this.logger.warn('RESEND_API_KEY is missing — email sending is disabled');
     }
+  }
 
-    // ---------------- 1. WELCOME EMAIL (to new tenant) ----------------
-    async sendWelcomeEmail(params: {
-        to: string;
-        companyName: string;
-        slug: string;
-        loginEmail: string;
-    }) {
-        if (!this.resend) return;
-        const { to, companyName, slug, loginEmail } = params;
+  // ---------------- 1. WELCOME EMAIL (to new tenant, after approval) ----------------
+  async sendWelcomeEmail(params: {
+    to: string;
+    companyName: string;
+    slug: string;
+    loginEmail: string;
+  }) {
+    if (!this.resend) return;
+    const { to, companyName, slug, loginEmail } = params;
 
-        try {
-            await this.resend.emails.send({
-                from: `SPAAS <${this.fromEmail}>`,
-                to: [to],
-                subject: `🎉 Welcome to SPAAS, ${companyName}!`,
-                html: this.renderEmail({
-                    title: `Welcome to SPAAS, ${companyName}!`,
-                    preheader: `Your workspace is ready. Log in now.`,
-                    body: `
-            <p>Hi there,</p>
-            <p>Your SPAAS workspace has been created successfully. You're now ready to manage your business — from sales and inventory to manufacturing and finance.</p>
+    try {
+      await this.resend.emails.send({
+        from: `SPAAS <${this.fromEmail}>`,
+        to: [to],
+        subject: `🎉 Welcome to SPAAS, ${companyName}!`,
+        html: this.renderEmail({
+          title: `Welcome to SPAAS, ${companyName}!`,
+          preheader: `Your workspace is approved. Log in now.`,
+          body: `
+            <p>Great news — your SPAAS account has been approved!</p>
+            <p>You can now log in and start managing your business.</p>
 
             <div class="info-box">
               <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #a78bfa; text-transform: uppercase; letter-spacing: 1px;">Your Workspace</h3>
@@ -50,8 +50,6 @@ export class EmailService {
                 <tr><td style="color: #9ca3af; padding: 4px 0;">Login email</td><td style="color: #fff; font-weight: 600; text-align: right;">${loginEmail}</td></tr>
               </table>
             </div>
-
-            <p>Click the button below to log in to your workspace:</p>
 
             <div style="text-align: center; margin: 32px 0;">
               <a href="${this.appUrl}/login" class="button">Log in to SPAAS</a>
@@ -66,36 +64,35 @@ export class EmailService {
               <li>Invite your team from the <strong>Team</strong> page</li>
             </ul>
 
-            <p style="margin-top: 32px;">If you have any questions, just reply to this email.</p>
             <p style="color: #9ca3af; font-size: 14px; margin-top: 32px;">— The SPAAS team</p>
           `,
-                }),
-            });
-            this.logger.log(`Welcome email sent to ${to}`);
-        } catch (err: any) {
-            this.logger.error(`Failed to send welcome email to ${to}: ${err.message}`);
-        }
+        }),
+      });
+      this.logger.log(`Welcome email sent to ${to}`);
+    } catch (err: any) {
+      this.logger.error(`Failed to send welcome email to ${to}: ${err.message}`);
     }
+  }
 
-    // ---------------- 2. ADMIN ALERT (to you, the owner) ----------------
-    async sendNewSignupAlert(params: {
-        companyName: string;
-        slug: string;
-        ownerEmail: string;
-        tenantId: string;
-    }) {
-        if (!this.resend || !this.adminEmail) return;
-        const { companyName, slug, ownerEmail, tenantId } = params;
+  // ---------------- 2. ADMIN ALERT (to platform owner) ----------------
+  async sendNewSignupAlert(params: {
+    companyName: string;
+    slug: string;
+    ownerEmail: string;
+    tenantId: string;
+  }) {
+    if (!this.resend || !this.adminEmail) return;
+    const { companyName, slug, ownerEmail, tenantId } = params;
 
-        try {
-            await this.resend.emails.send({
-                from: `SPAAS <${this.fromEmail}>`,
-                to: [this.adminEmail],
-                subject: `🎉 New signup: ${companyName}`,
-                html: this.renderEmail({
-                    title: `New signup: ${companyName}`,
-                    preheader: `${ownerEmail} just created a new SPAAS workspace.`,
-                    body: `
+    try {
+      await this.resend.emails.send({
+        from: `SPAAS <${this.fromEmail}>`,
+        to: [this.adminEmail],
+        subject: `🎉 New signup: ${companyName}`,
+        html: this.renderEmail({
+          title: `New signup: ${companyName}`,
+          preheader: `${ownerEmail} just created a new SPAAS workspace.`,
+          body: `
             <p>A new company just signed up for SPAAS.</p>
 
             <div class="info-box">
@@ -108,36 +105,82 @@ export class EmailService {
             </div>
 
             <div style="text-align: center; margin: 32px 0;">
-              <a href="${this.appUrl}/platform/tenants/${tenantId}" class="button">View in Platform Console</a>
+              <a href="${this.appUrl}/platform/tenants/${tenantId}" class="button">Review in Platform Console</a>
             </div>
 
             <p style="color: #9ca3af; font-size: 13px; text-align: center;">This email was sent to you because you are the platform admin of SPAAS.</p>
           `,
-                }),
-            });
-            this.logger.log(`New signup alert sent to ${this.adminEmail} for ${companyName}`);
-        } catch (err: any) {
-            this.logger.error(`Failed to send admin alert: ${err.message}`);
-        }
+        }),
+      });
+      this.logger.log(`New signup alert sent to ${this.adminEmail} for ${companyName}`);
+    } catch (err: any) {
+      this.logger.error(`Failed to send admin alert: ${err.message}`);
     }
+  }
 
-    // ---------------- 3. PAUSE NOTIFICATION (to tenant) ----------------
-    async sendPausedEmail(params: {
-        to: string;
-        companyName: string;
-    }) {
-        if (!this.resend) return;
-        const { to, companyName } = params;
+  // ---------------- 3. PENDING NOTIFICATION (to new tenant, awaiting approval) ----------------
+  async sendPendingEmail(params: {
+    to: string;
+    companyName: string;
+    slug: string;
+  }) {
+    if (!this.resend) return;
+    const { to, companyName, slug } = params;
 
-        try {
-            await this.resend.emails.send({
-                from: `SPAAS <${this.fromEmail}>`,
-                to: [to],
-                subject: `Your SPAAS account has been paused`,
-                html: this.renderEmail({
-                    title: 'Your account has been paused',
-                    preheader: `Your SPAAS workspace for ${companyName} has been temporarily paused.`,
-                    body: `
+    try {
+      await this.resend.emails.send({
+        from: `SPAAS <${this.fromEmail}>`,
+        to: [to],
+        subject: `Your SPAAS account is being reviewed`,
+        html: this.renderEmail({
+          title: 'Your account is being reviewed',
+          preheader: `We've received your signup for ${companyName}.`,
+          body: `
+            <p>Thanks for signing up for SPAAS!</p>
+
+            <div class="info-box">
+              <p style="margin: 0; color: #a78bfa; font-weight: 600;">✅ Signup received</p>
+              <p style="margin: 8px 0 0 0; color: #d1d5db; font-size: 14px;">
+                Your account for <strong>${companyName}</strong> (workspace: <code>${slug}</code>) is being reviewed by our team.
+                We usually approve new accounts within a few hours.
+              </p>
+            </div>
+
+            <h3 style="font-size: 16px; color: #fff; margin-top: 32px;">What happens next?</h3>
+            <ol style="color: #d1d5db; font-size: 14px; line-height: 1.8;">
+              <li>Our team reviews your signup (usually within a few hours)</li>
+              <li>You'll receive an email confirming your account is active</li>
+              <li>You can then log in at <a href="${this.appUrl}/login">${this.appUrl}/login</a></li>
+            </ol>
+
+            <p style="margin-top: 24px;">If you have any questions, just reply to this email.</p>
+            <p style="color: #9ca3af; font-size: 14px; margin-top: 32px;">— The SPAAS team</p>
+          `,
+        }),
+      });
+      this.logger.log(`Pending notification sent to ${to}`);
+    } catch (err: any) {
+      this.logger.error(`Failed to send pending email to ${to}: ${err.message}`);
+    }
+  }
+
+  // ---------------- 4. PAUSE NOTIFICATION (to tenant) ----------------
+  async sendPausedEmail(params: {
+    to: string;
+    companyName: string;
+  }) {
+    if (!this.resend) return;
+    const { to, companyName } = params;
+
+    try {
+      await this.resend.emails.send({
+        from: `SPAAS <${this.fromEmail}>`,
+        to: [to],
+        subject: `Your SPAAS account has been paused`,
+        html: this.renderEmail({
+          title: 'Your account has been paused',
+          preheader: `Your SPAAS workspace for ${companyName} has been temporarily paused.`,
+          body: `
             <p>Hi there,</p>
 
             <div class="warning-box">
@@ -159,17 +202,17 @@ export class EmailService {
 
             <p style="color: #9ca3af; font-size: 14px; margin-top: 32px;">— The SPAAS team</p>
           `,
-                }),
-            });
-            this.logger.log(`Pause notification sent to ${to}`);
-        } catch (err: any) {
-            this.logger.error(`Failed to send pause email: ${err.message}`);
-        }
+        }),
+      });
+      this.logger.log(`Pause notification sent to ${to}`);
+    } catch (err: any) {
+      this.logger.error(`Failed to send pause email: ${err.message}`);
     }
+  }
 
-    // ---------------- Shared template wrapper ----------------
-    private renderEmail(opts: { title: string; preheader: string; body: string }): string {
-        return `
+  // ---------------- Shared template wrapper ----------------
+  private renderEmail(opts: { title: string; preheader: string; body: string }): string {
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -214,5 +257,5 @@ export class EmailService {
 </body>
 </html>
     `.trim();
-    }
+  }
 }

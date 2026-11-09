@@ -7,19 +7,22 @@ import { AppModule } from './app/app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS and restrict it to your live frontend and local development
+  // Enable CORS for all our domains
   app.enableCors({
     origin: [
       'http://localhost:4200',
-      'https://spaas.vercel.app' // <-- Your live Vercel URL
+      'https://spaas.vercel.app',
+      'https://spaas.quickie-studio.com',
+      'https://api.spaas.quickie-studio.com',
     ],
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Remove the global /api prefix so routes are clean
+  // Remove global /api prefix
   app.setGlobalPrefix('');
 
-  // Render provides a PORT environment variable
   const port = process.env['PORT'] || 3000;
   await app.listen(port);
   console.log(`🚀 SPAAS API is running on: http://localhost:${port}`);

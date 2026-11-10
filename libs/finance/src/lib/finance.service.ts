@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { withTenant, TenantStore } from '@spaas/shared';
 import { glAccounts, journalEntries, journalLines } from './finance.module';
-import { eq, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 @Injectable()
@@ -44,10 +44,14 @@ export class FinanceService {
 
             // 3. Insert the lines
             for (const line of lines) {
-                // Find the GL Account by its code — must also be this tenant's account
-                const [account] = await tx.select().from(glAccounts)
-                    .where(eq(glAccounts.code, line.glCode));
-                if (!account) throw new NotFoundException(`GL Account ${line.glCode} not found`);
+                // SECURITY FIX: Filter by BOTH code AND tenant_id to prevent cross-tenant postings
+                const [account] = await tx.select().from(glAccounts).where(
+                    and(
+                        eq(glAccounts.code, line.glCode),
+                        eq(glAccounts.tenantId, context.tenantId)
+                    )
+                );
+                if (!account) throw new NotFoundException(`GL Account ${line.glCode} not found for this tenant`);
 
                 await tx.insert(journalLines).values({
                     tenantId: context.tenantId,

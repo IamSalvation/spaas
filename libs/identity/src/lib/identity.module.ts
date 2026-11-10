@@ -34,10 +34,15 @@ export const users = identitySchema.table('user', {
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+const jwtSecret = process.env['JWT_SECRET'];
+if (!jwtSecret) {
+	throw new Error('JWT_SECRET environment variable is required');
+}
+
 @Module({
 	imports: [
 		JwtModule.register({
-			secret: process.env['JWT_SECRET'] || 'fallback-secret',
+			secret: jwtSecret,
 			signOptions: { expiresIn: '1d' },
 		}),
 	],

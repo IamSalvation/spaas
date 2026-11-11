@@ -22,8 +22,8 @@ import { AuditInterceptor } from './audit.interceptor';
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // 60 seconds
-        limit: 60,  // Default: 60 requests per minute per IP (generous)
+        ttl: 60000,
+        limit: 60,
       },
     ]),
     IdentityModule,

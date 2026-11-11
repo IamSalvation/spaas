@@ -14,7 +14,20 @@ export class IdentityService {
         private readonly emailService: EmailService,
     ) { }
 
+    // In-memory per-email login attempt tracker
+    private emailAttempts = new Map<string, { count: number; resetAt: number }>();
+
     async registerCompany(companyName: string, email: string, pass: string) {
+        // Block duplicate signup email
+        const existing = await db.execute(sql`
+      SELECT id FROM identity.user WHERE email = ${email} LIMIT 1
+    `);
+        if (existing.length > 0) {
+            throw new UnauthorizedException(
+                'An account with this email already exists. Please log in instead.'
+            );
+        }
+
         const passwordHash = await bcrypt.hash(pass, 10);
 
         const baseSlug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -22,12 +35,11 @@ export class IdentityService {
         let slug = baseSlug;
         let counter = 1;
         while (true) {
-            const existing = await db.execute(sql`SELECT id FROM identity.tenant WHERE slug = ${slug}`);
-            if (existing.length === 0) break;
+            const existingSlug = await db.execute(sql`SELECT id FROM identity.tenant WHERE slug = ${slug}`);
+            if (existingSlug.length === 0) break;
             slug = `${baseSlug}-${counter++}`;
         }
 
-        // Create tenant as PENDING (not active)
         const [tenant] = await db.insert(tenants).values({
             name: companyName,
             slug,
@@ -49,7 +61,6 @@ export class IdentityService {
             });
         });
 
-        // Send ADMIN alert immediately
         void this.emailService.sendNewSignupAlert({
             companyName,
             slug,
@@ -57,7 +68,6 @@ export class IdentityService {
             tenantId: tenant.id,
         });
 
-        // Send PENDING notification to the user
         void this.emailService.sendPendingEmail({
             to: email,
             companyName,
@@ -72,6 +82,25 @@ export class IdentityService {
     }
 
     async login(email: string, pass: string, identifier: string) {
+        // ---------- PER-EMAIL RATE LIMIT ----------
+        // Max 10 attempts per 15 minutes per email address
+        const now = Date.now();
+        const record = this.emailAttempts.get(email);
+
+        if (record && record.resetAt > now && record.count >= 10) {
+            const minutesLeft = Math.ceil((record.resetAt - now) / 60000);
+            throw new UnauthorizedException(
+                `Too many login attempts for this account. Try again in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`
+            );
+        }
+
+        if (!record || record.resetAt <= now) {
+            this.emailAttempts.set(email, { count: 1, resetAt: now + 15 * 60 * 1000 });
+        } else {
+            record.count++;
+        }
+
+        // ---------- TENANT LOOKUP ----------
         const tenantLookup = await db.execute(sql`
       SELECT id, status FROM identity.tenant
       WHERE slug = ${identifier} OR id::text = ${identifier}
@@ -95,6 +124,7 @@ export class IdentityService {
             throw new UnauthorizedException('This account has been deleted.');
         }
 
+        // ---------- USER LOOKUP ----------
         const user = await TenantStore.run({ tenantId, userId: 'system' }, async () => {
             return await withTenant(async (tx: PostgresJsDatabase<any>) => {
                 const results = await tx.select().from(users).where(eq(users.email, email));
@@ -106,6 +136,9 @@ export class IdentityService {
 
         const isMatch = await bcrypt.compare(pass, user.passwordHash);
         if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+
+        // On successful login, clear the failed-attempt counter
+        this.emailAttempts.delete(email);
 
         return this.generateToken(user);
     }

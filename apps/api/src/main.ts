@@ -7,6 +7,12 @@ import { AppModule } from './app/app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // TEMPORARY DIAGNOSTIC LOG — remove after debugging
+  app.use((req: any, _res: any, next: any) => {
+    console.log('IP:', req.ip, '| XFF:', req.headers['x-forwarded-for']);
+    next();
+  });
+
   // Trust Render's load balancer (first proxy)
   // Using getInstance() to access the underlying Express app
   const expressApp = app.getHttpAdapter().getInstance();

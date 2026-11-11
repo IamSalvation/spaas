@@ -7,7 +7,11 @@ import { AppModule } from './app/app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for all our domains
+  // Trust Render's load balancer (first proxy)
+  // Using getInstance() to access the underlying Express app
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   app.enableCors({
     origin: [
       'http://localhost:4200',
@@ -20,7 +24,6 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Remove global /api prefix
   app.setGlobalPrefix('');
 
   const port = process.env['PORT'] || 3000;

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { IdentityModule } from '@spaas/identity';
@@ -19,6 +20,12 @@ import { AuditInterceptor } from './audit.interceptor';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 seconds
+        limit: 60,  // Default: 60 requests per minute per IP (generous)
+      },
+    ]),
     IdentityModule,
     FinanceModule,
     MasterdataModule,
@@ -34,12 +41,16 @@ import { AuditInterceptor } from './audit.interceptor';
   providers: [
     AppService,
     {
-      provide: APP_INTERCEPTOR,
-      useClass: TenantInterceptor,  // Runs FIRST - sets tenant context
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: AuditInterceptor,   // Runs SECOND - uses tenant context
+      useClass: TenantInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
     },
   ],
 })

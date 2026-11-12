@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 interface LogoProps {
     variant?: 'full' | 'icon';
-    href?: string;
+    href?: string | null;
     height?: number;
 }
 
@@ -30,7 +30,6 @@ export function Logo({ variant = 'full', href = '/dashboard', height = 32 }: Log
 
     const width = variant === 'icon' ? height : height * 4.5;
 
-    // Use <img> instead of <Image> for SVG (Next.js requires extra config for SVGs)
     const img = (
         <img
             src={src}
@@ -41,13 +40,13 @@ export function Logo({ variant = 'full', href = '/dashboard', height = 32 }: Log
         />
     );
 
-    if (href) {
-        return (
-            <Link href={href} className="inline-flex items-center">
-                {img}
-            </Link>
-        );
+    if (href === null) {
+        return img;
     }
 
-    return img;
+    return (
+        <Link href={href} className="inline-flex items-center">
+            {img}
+        </Link>
+    );
 }

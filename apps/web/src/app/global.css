@@ -2,8 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 body {
-  background-color: #111827;
-  /* Dark mode background */
-  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }

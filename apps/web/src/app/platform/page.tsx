@@ -38,8 +38,8 @@ function HomeInner() {
     load();
   }, []);
 
-  if (loading) return <div className="p-8 text-gray-400">Loading platform stats...</div>;
-  if (error) return <div className="p-8 text-red-400">{error}</div>;
+  if (loading) return <div className="p-8 text-gray-500 dark:text-gray-400">Loading platform stats...</div>;
+  if (error) return <div className="p-8 text-red-600 dark:text-red-400">{error}</div>;
   if (!stats) return null;
 
   const revenue = (Number(stats.platform_revenue_minor) / 100).toLocaleString('en-US', {
@@ -54,8 +54,8 @@ function HomeInner() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-1">Platform Overview</h1>
-        <p className="text-sm text-gray-400">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Platform Overview</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Manage all tenants on SPAAS.
         </p>
       </div>
@@ -64,58 +64,48 @@ function HomeInner() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Link
           href="/platform/tenants"
-          className="bg-gray-800 rounded-lg p-5 border border-gray-700 hover:border-purple-700 transition group"
+          className="bg-white dark:bg-spaas-surface rounded-lg p-5 border border-gray-200 dark:border-gray-700 hover:border-spaas-blue transition group shadow-sm"
         >
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Total Tenants</div>
-          <div className="text-4xl font-bold text-white group-hover:text-purple-400 transition">
+          <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Total Tenants</div>
+          <div className="text-4xl font-bold text-gray-900 dark:text-white group-hover:text-spaas-blue transition">
             {stats.total_tenants}
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
             {stats.active_tenants > 0 && (
-              <span className="px-1.5 py-0.5 rounded bg-emerald-900/50 text-emerald-400 text-[10px] font-medium border border-emerald-800">
+              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium border border-emerald-500/20">
                 {stats.active_tenants} active
               </span>
             )}
             {stats.pending_tenants > 0 && (
-              <span className="px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-400 text-[10px] font-medium border border-amber-800">
+              <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium border border-amber-500/20">
                 {stats.pending_tenants} pending
-              </span>
-            )}
-            {stats.paused_tenants > 0 && (
-              <span className="px-1.5 py-0.5 rounded bg-orange-900/50 text-orange-400 text-[10px] font-medium border border-orange-800">
-                {stats.paused_tenants} paused
-              </span>
-            )}
-            {stats.deleted_tenants > 0 && (
-              <span className="px-1.5 py-0.5 rounded bg-red-900/50 text-red-400 text-[10px] font-medium border border-red-800">
-                {stats.deleted_tenants} deleted
               </span>
             )}
           </div>
         </Link>
 
-        <div className="bg-gray-800 rounded-lg p-5 border border-gray-700">
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Monthly Recurring Revenue</div>
-          <div className="text-4xl font-bold text-purple-400">${mrr}</div>
+        <div className="bg-white dark:bg-spaas-surface rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Monthly Recurring Revenue</div>
+          <div className="text-4xl font-bold text-spaas-blue">${mrr}</div>
           <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
-            <span className="px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 border border-gray-600">
+            <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
               V1 × {stats.total_tenants > 0 ? '' : ''}{Math.round(stats.mrr_cents / 100 / 49) || 0}
             </span>
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-5 border border-gray-700">
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Platform-Wide Revenue</div>
-          <div className="text-4xl font-bold text-green-400">${revenue}</div>
-          <div className="mt-2 text-xs text-gray-500">
+        <div className="bg-white dark:bg-spaas-surface rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Platform-Wide Revenue</div>
+          <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">${revenue}</div>
+          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             Across all tenants · Sales-based
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-5 border border-gray-700">
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">New Signups (7 days)</div>
-          <div className="text-4xl font-bold text-blue-400">{stats.new_signups_7d}</div>
-          <div className="mt-2 text-xs text-gray-500">
+        <div className="bg-white dark:bg-spaas-surface rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">New Signups (7 days)</div>
+          <div className="text-4xl font-bold text-spaas-blue">{stats.new_signups_7d}</div>
+          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
             Tenants created this week
           </div>
         </div>
@@ -123,54 +113,60 @@ function HomeInner() {
 
       {/* Secondary stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-gray-800 rounded-lg p-5 border border-gray-700">
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Total Users</div>
-          <div className="text-3xl font-bold text-white">{stats.total_users}</div>
-          <div className="mt-1 text-xs text-gray-500">Across all tenants</div>
+        <div className="bg-white dark:bg-spaas-surface rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Total Users</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total_users}</div>
+          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">Across all tenants</div>
         </div>
-        <div className="bg-gray-800 rounded-lg p-5 border border-gray-700">
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Total Items</div>
-          <div className="text-3xl font-bold text-white">{stats.total_items}</div>
-          <div className="mt-1 text-xs text-gray-500">Master data records</div>
+        <div className="bg-white dark:bg-spaas-surface rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Total Items</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total_items}</div>
+          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">Master data records</div>
         </div>
-        <div className="bg-gray-800 rounded-lg p-5 border border-gray-700">
-          <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">Total Sales Orders</div>
-          <div className="text-3xl font-bold text-white">{stats.total_sales_orders}</div>
-          <div className="mt-1 text-xs text-gray-500">Orders processed</div>
+        <div className="bg-white dark:bg-spaas-surface rounded-lg p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Total Sales Orders</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total_sales_orders}</div>
+          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">Orders processed</div>
         </div>
       </div>
 
       {/* Quick actions */}
       <div className="mt-8">
-        <h2 className="text-lg font-bold text-white mb-3">Quick Actions</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link
             href="/platform/tenants"
-            className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-purple-700 transition flex items-center justify-between group"
+            className="bg-white dark:bg-spaas-surface rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-spaas-blue transition flex items-center justify-between group shadow-sm"
           >
             <div>
-              <div className="font-medium text-white group-hover:text-purple-400 transition">
+              <div className="font-medium text-gray-900 dark:text-white group-hover:text-spaas-blue transition">
                 View All Tenants
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Manage subscriptions, limits, and status
               </div>
             </div>
-            <div className="text-gray-600 group-hover:text-purple-400 transition text-2xl">→</div>
+            {/* FIXED ARROW SYMBOL */}
+            <div className="text-gray-400 group-hover:text-spaas-blue transition text-2xl">
+              &rarr;
+            </div>
           </Link>
           <Link
             href="/dashboard"
-            className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-blue-700 transition flex items-center justify-between group"
+            className="bg-white dark:bg-spaas-surface rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-spaas-blue transition flex items-center justify-between group shadow-sm"
           >
             <div>
-              <div className="font-medium text-white group-hover:text-blue-400 transition">
+              <div className="font-medium text-gray-900 dark:text-white group-hover:text-spaas-blue transition">
                 Enter My Tenant Dashboard
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Use SPAAS as a normal user
               </div>
             </div>
-            <div className="text-gray-600 group-hover:text-blue-400 transition text-2xl">→</div>
+            {/* FIXED ARROW SYMBOL */}
+            <div className="text-gray-400 group-hover:text-spaas-blue transition text-2xl">
+              &rarr;
+            </div>
           </Link>
         </div>
       </div>

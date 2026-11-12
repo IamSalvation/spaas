@@ -54,12 +54,12 @@ export default function MasterDataPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-8">
             <div className="max-w-6xl mx-auto">
                 <header className="flex justify-between items-center mb-8">
                     <div className="flex items-center gap-6">
                         <h1 className="text-3xl font-bold text-blue-400">Master Data</h1>
-                        <Link href="/dashboard" className="text-gray-400 hover:text-white underline">Back to Dashboard</Link>
+                        <Link href="/dashboard" className="text-gray-500 dark:text-gray-400 hover:text-white underline">Back to Dashboard</Link>
                     </div>
                     <button onClick={logout} className="bg-red-600/20 text-red-400 px-4 py-2 rounded hover:bg-red-600/40 transition">
                         Logout
@@ -68,19 +68,19 @@ export default function MasterDataPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* PARTIES (Customers & Vendors) */}
-                    <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                         <h2 className="text-xl font-bold mb-4">Customers & Vendors</h2>
 
                         <form onSubmit={handleCreateParty} className="flex flex-col gap-2 mb-6">
                             <div className="flex gap-2">
-                                <select value={partyType} onChange={(e) => setPartyType(e.target.value)} className="bg-gray-700 p-2 rounded border border-gray-600 w-32">
+                                <select value={partyType} onChange={(e) => setPartyType(e.target.value)} className="bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600 w-32">
                                     <option value="customer">Customer</option>
                                     <option value="vendor">Vendor</option>
                                 </select>
-                                <input type="text" placeholder="Name" value={partyName} onChange={(e) => setPartyName(e.target.value)} className="bg-gray-700 p-2 rounded border border-gray-600 flex-1" required />
+                                <input type="text" placeholder="Name" value={partyName} onChange={(e) => setPartyName(e.target.value)} className="bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600 flex-1" required />
                             </div>
                             <div className="flex gap-2">
-                                <input type="email" placeholder="Email (Optional)" value={partyEmail} onChange={(e) => setPartyEmail(e.target.value)} className="bg-gray-700 p-2 rounded border border-gray-600 flex-1" />
+                                <input type="email" placeholder="Email (Optional)" value={partyEmail} onChange={(e) => setPartyEmail(e.target.value)} className="bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600 flex-1" />
                                 <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold">Add</button>
                             </div>
                         </form>
@@ -88,7 +88,7 @@ export default function MasterDataPage() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-gray-700 text-gray-400">
+                                    <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
                                         <th className="p-2">Type</th>
                                         <th className="p-2">Name</th>
                                         <th className="p-2">Email</th>
@@ -96,10 +96,10 @@ export default function MasterDataPage() {
                                 </thead>
                                 <tbody>
                                     {parties.map(p => (
-                                        <tr key={p.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                                        <tr key={p.id} className="border-b border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                                             <td className="p-2 capitalize text-sm">{p.type}</td>
                                             <td className="p-2 font-medium">{p.name}</td>
-                                            <td className="p-2 text-gray-400 text-sm">{p.email}</td>
+                                            <td className="p-2 text-gray-500 dark:text-gray-400 text-sm">{p.email}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -108,16 +108,16 @@ export default function MasterDataPage() {
                     </div>
 
                     {/* ITEMS */}
-                    <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                         <h2 className="text-xl font-bold mb-4">Items (Products)</h2>
 
                         <form onSubmit={handleCreateItem} className="flex flex-col gap-2 mb-6">
                             <div className="flex gap-2">
-                                <input type="text" placeholder="SKU" value={itemSku} onChange={(e) => setItemSku(e.target.value)} className="bg-gray-700 p-2 rounded border border-gray-600 w-32" required />
-                                <input type="text" placeholder="Name" value={itemName} onChange={(e) => setItemName(e.target.value)} className="bg-gray-700 p-2 rounded border border-gray-600 flex-1" required />
+                                <input type="text" placeholder="SKU" value={itemSku} onChange={(e) => setItemSku(e.target.value)} className="bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600 w-32" required />
+                                <input type="text" placeholder="Name" value={itemName} onChange={(e) => setItemName(e.target.value)} className="bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600 flex-1" required />
                             </div>
                             <div className="flex gap-2">
-                                <input type="text" placeholder="UOM (e.g. EA, KG)" value={itemUom} onChange={(e) => setItemUom(e.target.value)} className="bg-gray-700 p-2 rounded border border-gray-600 flex-1" required />
+                                <input type="text" placeholder="UOM (e.g. EA, KG)" value={itemUom} onChange={(e) => setItemUom(e.target.value)} className="bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600 flex-1" required />
                                 <button type="submit" className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold">Add</button>
                             </div>
                         </form>
@@ -125,7 +125,7 @@ export default function MasterDataPage() {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-gray-700 text-gray-400">
+                                    <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
                                         <th className="p-2">SKU</th>
                                         <th className="p-2">Name</th>
                                         <th className="p-2">UOM</th>
@@ -133,10 +133,10 @@ export default function MasterDataPage() {
                                 </thead>
                                 <tbody>
                                     {items.map(i => (
-                                        <tr key={i.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                                        <tr key={i.id} className="border-b border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                                             <td className="p-2 font-mono text-sm text-blue-400">{i.sku}</td>
                                             <td className="p-2 font-medium">{i.name}</td>
-                                            <td className="p-2 text-gray-400 text-sm">{i.uom}</td>
+                                            <td className="p-2 text-gray-500 dark:text-gray-400 text-sm">{i.uom}</td>
                                         </tr>
                                     ))}
                                 </tbody>

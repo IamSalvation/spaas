@@ -33,10 +33,10 @@ export default function SignupPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
-            <div className="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-4">
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700">
                 <h1 className="text-3xl font-bold mb-2 text-center text-blue-400">Create your SPAAS account</h1>
-                <p className="text-center text-gray-400 text-sm mb-6">Get your business running in minutes</p>
+                <p className="text-center text-gray-500 dark:text-gray-400 text-sm mb-6">Get your business running in minutes</p>
 
                 {error && (
                     <div className="bg-red-500/20 text-red-400 p-3 rounded mb-4 text-sm">{error}</div>
@@ -49,7 +49,7 @@ export default function SignupPage() {
                             type="text"
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
-                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 outline-none"
+                            className="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:border-blue-500 outline-none"
                             placeholder="e.g. Acme Manufacturing"
                             required
                         />
@@ -60,7 +60,7 @@ export default function SignupPage() {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 outline-none"
+                            className="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:border-blue-500 outline-none"
                             placeholder="you@company.com"
                             required
                         />
@@ -71,7 +71,7 @@ export default function SignupPage() {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500 outline-none"
+                            className="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:border-blue-500 outline-none"
                             placeholder="At least 8 characters"
                             minLength={8}
                             required
@@ -86,7 +86,7 @@ export default function SignupPage() {
                     </button>
                 </form>
 
-                <p className="text-center text-sm text-gray-400 mt-6">
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
                     Already have an account?{' '}
                     <Link href="/login" className="text-blue-400 hover:underline">
                         Log in

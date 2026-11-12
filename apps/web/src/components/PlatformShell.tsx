@@ -19,7 +19,6 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-black/20 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-colors">
         <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-          {/* FIXED: href is null so it doesn't render a nested <a> tag */}
           <Link href="/platform" className="block">
             <Logo variant="full" href={null} height={28} />
             <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-2 ml-1">
@@ -56,7 +55,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
             <p className="text-sm font-medium truncate text-gray-900 dark:text-white">
               {user?.email}
             </p>
-            <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-spaas-blue/20 text-spaas-blue dark:bg-purple-900/50 dark:text-purple-300">
+            {/* FIXED PURPLE BADGE TO BLUE */}
+            <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-spaas-blue/10 text-spaas-blue dark:bg-spaas-blue/20 dark:text-spaas-blue border border-spaas-blue/20">
               PLATFORM ADMIN
             </span>
           </div>

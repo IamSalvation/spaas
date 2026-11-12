@@ -23,20 +23,22 @@ interface Tenant {
 
 function statusClass(status: string): string {
   switch (status) {
-    case 'active': return 'bg-emerald-900/50 text-emerald-400 border border-emerald-800';
-    case 'pending': return 'bg-amber-900/50 text-amber-400 border border-amber-800';
-    case 'paused': return 'bg-orange-900/50 text-orange-400 border border-orange-800';
-    case 'deleted': return 'bg-red-900/50 text-red-400 border border-red-800';
-    default: return 'bg-gray-700 text-gray-300';
+    // Updated to work in both light and dark mode
+    case 'active': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-800';
+    case 'pending': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 dark:border-amber-800';
+    case 'paused': return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 dark:border-orange-800';
+    case 'deleted': return 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 dark:border-red-800';
+    default: return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
   }
 }
 
 function tierClass(tier: string): string {
   switch (tier) {
-    case 'v2': return 'bg-violet-900/50 text-violet-400 border border-violet-800';
-    case 'v3': return 'bg-fuchsia-900/50 text-fuchsia-400 border border-fuchsia-800';
+    // Updated to work in both light and dark mode
+    case 'v2': return 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 dark:border-violet-800';
+    case 'v3': return 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 border border-fuchsia-500/20 dark:border-fuchsia-800';
     case 'v1':
-    default: return 'bg-gray-700 text-gray-300 border border-gray-600';
+    default: return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600';
   }
 }
 
@@ -112,15 +114,15 @@ function TenantsInner() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Tenants</h1>
-          <p className="text-sm text-gray-400">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Tenants</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {tenants.length} account{tenants.length === 1 ? '' : 's'} on the platform
           </p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="px-4 py-2 rounded border border-gray-700 text-gray-300 hover:bg-gray-800 text-sm disabled:opacity-50"
+          className="px-4 py-2 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm disabled:opacity-50 transition-colors"
         >
           Refresh
         </button>
@@ -132,11 +134,10 @@ function TenantsInner() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded text-xs font-medium border ${
-              statusFilter === s
-                ? 'bg-purple-600 text-white border-purple-500'
-                : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
-            }`}
+            className={`px-3 py-1.5 rounded text-xs font-medium border ${statusFilter === s
+                ? 'bg-spaas-blue text-white border-spaas-blue'
+                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
           >
             {s.charAt(0).toUpperCase() + s.slice(1)}
             <span className="ml-2 opacity-60">({counts[s]})</span>
@@ -145,21 +146,21 @@ function TenantsInner() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded bg-red-900/30 border border-red-800 px-4 py-2 text-sm text-red-300">
+        <div className="mb-4 rounded bg-red-500/10 border border-red-500/20 px-4 py-2 text-sm text-red-600 dark:text-red-400">
           {error}
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-12 text-center text-gray-400">Loading tenants...</div>
+          <div className="p-12 text-center text-gray-500 dark:text-gray-400">Loading tenants...</div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-gray-400">No tenants match this filter.</div>
+          <div className="p-12 text-center text-gray-500 dark:text-gray-400">No tenants match this filter.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-900/60 text-gray-400 text-xs uppercase tracking-wider">
+              <thead className="bg-gray-50 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium">Company</th>
                   <th className="px-4 py-3 text-left font-medium">Slug</th>
@@ -172,26 +173,26 @@ function TenantsInner() {
                   <th className="px-4 py-3 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/50">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700/50">
                 {filtered.map((t) => {
                   const isOwn = t.id === user?.tenantId;
                   const isWorking = working === t.id;
                   return (
-                    <tr key={t.id} className="hover:bg-gray-700/30">
+                    <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                       <td className="px-4 py-3">
                         <Link
                           href={`/platform/tenants/${t.id}`}
-                          className="font-medium text-white hover:text-purple-400 hover:underline"
+                          className="font-medium text-gray-900 dark:text-white hover:text-spaas-blue hover:underline"
                         >
                           {t.name}
                         </Link>
                         {isOwn && (
-                          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-blue-900/50 text-blue-300 border border-blue-800">
+                          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                             YOU
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-400">{t.slug}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">{t.slug}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusClass(t.status)}`}>
                           {t.status.toUpperCase()}
@@ -207,10 +208,10 @@ function TenantsInner() {
                           {t.tier.toUpperCase()}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-300">{t.user_count}</td>
-                      <td className="px-4 py-3 text-right text-gray-300">{t.item_count}</td>
-                      <td className="px-4 py-3 text-right text-gray-300">{t.sales_count}</td>
-                      <td className="px-4 py-3 text-right font-mono text-green-400">
+                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{t.user_count}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{t.item_count}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">{t.sales_count}</td>
+                      <td className="px-4 py-3 text-right font-mono text-green-600 dark:text-green-400">
                         {formatMoney(t.revenue_minor)}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -219,7 +220,7 @@ function TenantsInner() {
                             <button
                               onClick={() => updateStatus(t.id, 'active', `Approve ${t.name}?`)}
                               disabled={isWorking}
-                              className="text-emerald-400 hover:underline disabled:opacity-50"
+                              className="text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50"
                             >
                               Approve
                             </button>
@@ -228,7 +229,7 @@ function TenantsInner() {
                             <button
                               onClick={() => updateStatus(t.id, 'paused', `Pause ${t.name}? They will not be able to log in.`)}
                               disabled={isWorking}
-                              className="text-orange-400 hover:underline disabled:opacity-50"
+                              className="text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-50"
                             >
                               Pause
                             </button>
@@ -237,7 +238,7 @@ function TenantsInner() {
                             <button
                               onClick={() => updateStatus(t.id, 'active', `Restore ${t.name}?`)}
                               disabled={isWorking}
-                              className="text-emerald-400 hover:underline disabled:opacity-50"
+                              className="text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50"
                             >
                               Restore
                             </button>
@@ -246,7 +247,7 @@ function TenantsInner() {
                             <button
                               onClick={() => updateStatus(t.id, 'deleted', `Soft-delete ${t.name}? Data is preserved but the account cannot log in.`)}
                               disabled={isWorking}
-                              className="text-red-400 hover:underline disabled:opacity-50"
+                              className="text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
                             >
                               Delete
                             </button>
@@ -255,7 +256,7 @@ function TenantsInner() {
                             <button
                               onClick={() => updateStatus(t.id, 'active', `Restore ${t.name}?`)}
                               disabled={isWorking}
-                              className="text-emerald-400 hover:underline disabled:opacity-50"
+                              className="text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50"
                             >
                               Restore
                             </button>
@@ -271,8 +272,8 @@ function TenantsInner() {
         )}
       </div>
 
-      <p className="mt-4 text-xs text-gray-500">
-        Click the tier badge to cycle v1 → v2 → v3. Paused accounts cannot log in. Deleted accounts are preserved but blocked.
+      <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+        Click the tier badge to cycle v1 &rarr; v2 &rarr; v3. Paused accounts cannot log in. Deleted accounts are preserved but blocked.
       </p>
     </div>
   );

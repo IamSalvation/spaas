@@ -12,8 +12,6 @@ export function PublicFooter() {
                     {/* Product/Help */}
                     <div className="flex items-center gap-x-4">
                         <Link href="/help" className="hover:text-spaas-blue transition-colors">Help Center</Link>
-                        <span className="text-gray-600">·</span>
-                        <Link href="/status" className="hover:text-spaas-blue transition-colors">System Status</Link>
                     </div>
 
                     <span className="text-gray-600 hidden sm:inline">|</span>

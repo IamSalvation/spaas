@@ -13,8 +13,6 @@ export function PublicFooter() {
                     <div className="flex items-center gap-x-4">
                         <Link href="/help" className="hover:text-spaas-blue transition-colors">Help Center</Link>
                         <span className="text-gray-600">·</span>
-                        <Link href="/api-docs" className="hover:text-spaas-blue transition-colors">API Docs</Link>
-                        <span className="text-gray-600">·</span>
                         <Link href="/status" className="hover:text-spaas-blue transition-colors">System Status</Link>
                     </div>
 

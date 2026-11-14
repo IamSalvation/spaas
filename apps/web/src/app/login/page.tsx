@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '../../components/AuthProvider';
 import { Logo } from '../../components/Logo';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { PublicFooter } from '../../components/PublicFooter';
 
 export default function LoginPage() {
     const { login } = useAuth();
@@ -48,8 +49,8 @@ export default function LoginPage() {
                 <ThemeToggle />
             </div>
 
-            {/* 3. FORM CONTAINER - Aligned Left on large screens */}
-            <div className="relative z-10 flex-1 flex items-center justify-start lg:justify-start p-4 lg:p-0 lg:pl-16 xl:pl-32 pb-16">
+            {/* 3. FORM CONTAINER - Aligned Left */}
+            <div className="relative z-10 flex-1 flex items-center justify-start p-4 lg:p-0 lg:pl-16 xl:pl-32 pb-16">
                 <div className="w-full max-w-md bg-white/95 dark:bg-spaas-navy/95 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-2xl border border-white/20">
 
                     <div className="flex justify-center mb-6">
@@ -119,6 +120,9 @@ export default function LoginPage() {
                     </p>
                 </div>
             </div>
+
+            {/* 4. THE GLASS FOOTER (Added here) */}
+            <PublicFooter />
 
         </div>
     );

@@ -89,8 +89,8 @@ export default function ReportsPage() {
                 {!loading && (
                     <div className={`p-4 rounded-lg border ${totalDebits === totalCredits ? 'bg-green-900/20 border-green-700 text-green-400' : 'bg-red-900/20 border-red-700 text-red-400'}`}>
                         {totalDebits === totalCredits
-                            ? 'âœ… The books are perfectly balanced. Total Debits equal Total Credits.'
-                            : 'âŒ Warning: The books are out of balance!'}
+                            ? ' The books are perfectly balanced. Total Debits equal Total Credits.'
+                            : ' Warning: The books are out of balance!'}
                     </div>
                 )}
             </div>

@@ -51,7 +51,7 @@ export default function TeamPage() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Temporary Password</label>
-                            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" />
+                            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-gray-100 dark:bg-gray-700 p-2 rounded border border-gray-300 dark:border-gray-600" placeholder="••••••••" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Role</label>
